@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Seguimiento de Cosecha</title>
+<meta name="theme-color" content="#2d6a4f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Cosecha">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyD8D-G1ODz09eTBbvzIUs9qCskXMgx7qnQ",
+    authDomain: "app-cosecha-v1.firebaseapp.com",
+    projectId: "app-cosecha-v1",
+    storageBucket: "app-cosecha-v1.firebasestorage.app",
+    messagingSenderId: "70567946126",
+    appId: "1:70567946126:web:bbd8b1bb4ce3379102e6df"
+  };
+  const app = initializeApp(firebaseConfig);
+  window._auth = getAuth(app);
+  window._db   = getFirestore(app);
+  window._fb   = { doc, setDoc, getDoc, getDocs, collection, query, where, deleteDoc,
+                   signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updatePassword };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+<style>
+:root {
+  --bg: #f4f1ec;
+  --surface: #ffffff;
+  --surface2: #ede9e2;
+  --border: #d9d4cb;
+  --border2: #c8c2b7;
+  --text: #1c1a17;
+  --text2: #6b6560;
+  --text3: #9c968f;
+  --accent: #2d6a4f;
+  --accent-bg: #e8f5ee;
+  --accent-text: #1a4a35;
+  --amber: #b45309;
+  --amber-bg: #fef3c7;
+  --red: #991b1b;
+  --red-bg: #fee2e2;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* SCREENS */
+.screen { display: none; padding: 1.25rem 1rem 2rem; animation: fadeIn .2s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* HEADER */
+.page-header { margin-bottom: 1.5rem; }
+.page-header .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 4px; }
+.page-header h1 { font-size: 22px; font-weight: 600; }
+.page-header .sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+/* BACK */
+.back-btn { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text2); cursor: pointer; margin-bottom: 1.25rem; padding: 4px 0; }
+.back-btn:hover { color: var(--text); }
+.back-btn svg { width: 16px; height: 16px; }
+
+/* CARD */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.125rem; margin-bottom: .875rem; box-shadow: var(--shadow); }
+.card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+.card-head h3 { font-size: 14px; font-weight: 600; }
+
+/* FORM */
+label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 5px; letter-spacing: .02em; }
+input[type=text], input[type=number], select {
+  width: 100%; padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  margin-bottom: .875rem;
+  transition: border-color .15s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+input::placeholder { color: var(--text3); }
+.field { margin-bottom: .875rem; }
+.field label { margin-bottom: 5px; }
+.field input, .field select { margin-bottom: 0; }
+
+/* HORARIO PILLS */
+.hora-group { display: flex; gap: 6px; margin-bottom: .875rem; }
+.hora-btn {
+  flex: 1; padding: 9px 4px; font-size: 13px; font-family: inherit;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text2); cursor: pointer;
+  transition: all .15s; font-weight: 500;
+}
+.hora-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.hora-btn:not(.active):hover { border-color: var(--accent); color: var(--accent); }
+
+/* INFO BOX */
+.info-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: .875rem; font-size: 13px; }
+.info-row { display: flex; justify-content: space-between; align-items: center; }
+.info-row + .info-row { margin-top: 4px; }
+.info-row .lbl { color: var(--text2); }
+.info-row .val { font-weight: 500; }
+.has-big { font-size: 18px; font-weight: 600; color: var(--accent); }
+
+/* DIVIDER */
+.divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+
+/* BUTTONS */
+.btn-primary {
+  width: 100%; padding: 11px; font-size: 14px; font-weight: 600; font-family: inherit;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-sm); cursor: pointer; transition: opacity .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn-primary:hover { opacity: .9; }
+.btn-primary:active { opacity: .8; }
+.btn-secondary {
+  width: 100%; padding: 10px; font-size: 14px; font-weight: 500; font-family: inherit;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px;
+}
+.btn-secondary:hover { background: var(--surface2); }
+.btn-danger {
+  width: 100%; padding: 10px; font-size: 14px; font-weight: 500; font-family: inherit;
+  background: var(--red-bg); color: var(--red); border: 1px solid #fca5a5;
+  border-radius: var(--radius-sm); cursor: pointer; margin-top: 8px;
+}
+.btn-sm { padding: 6px 11px; font-size: 12px; font-weight: 500; font-family: inherit; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: var(--surface); color: var(--text2); }
+.btn-sm:hover { background: var(--surface2); }
+.btn-icon { padding: 5px 7px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: transparent; color: var(--red); font-size: 14px; line-height: 1; }
+
+/* ROL SELECTOR */
+.rol-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-bottom: 1rem; }
+.rol-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 1.25rem .75rem; text-align: center; cursor: pointer;
+  transition: all .2s; box-shadow: var(--shadow);
+}
+.rol-card:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.rol-card .icon { font-size: 32px; margin-bottom: .5rem; }
+.rol-card .rol-title { font-size: 14px; font-weight: 600; display: block; }
+.rol-card .rol-sub { font-size: 11px; color: var(--text3); display: block; margin-top: 2px; }
+
+/* STATUS BAR */
+.status { font-size: 12px; padding: 8px 12px; border-radius: var(--radius-sm); display: flex; align-items: center; gap: 6px; }
+.status.ok { background: var(--accent-bg); color: var(--accent-text); }
+.status.warn { background: var(--amber-bg); color: var(--amber); }
+
+/* DATA ROWS */
+.data-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.data-row:last-child { border-bottom: none; }
+.data-row .dl { color: var(--text2); }
+.data-row .dv { font-weight: 500; }
+
+/* STATS GRID */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .625rem; margin-bottom: 1rem; }
+.stat-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem; text-align: center; box-shadow: var(--shadow); }
+.stat-val { font-size: 24px; font-weight: 700; color: var(--accent); }
+.stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+/* MSG BOX */
+.msg-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: .875rem; box-shadow: var(--shadow); }
+.msg-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .625rem; }
+.msg-head h3 { font-size: 13px; font-weight: 600; }
+.msg-body { font-family: 'DM Mono', monospace; font-size: 11.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow-y: auto; color: var(--text); }
+.copied { font-size: 12px; color: var(--accent); text-align: center; margin-top: 6px; display: none; }
+
+/* BADGE */
+.badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; font-weight: 500; }
+.badge-green { background: var(--accent-bg); color: var(--accent-text); }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+
+/* FORMATO SEARCH */
+.search-wrap { position: relative; margin-bottom: .625rem; }
+.search-wrap input { margin-bottom: 0; }
+.dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto;
+  z-index: 200; display: none; box-shadow: var(--shadow-md);
+}
+.dd-item { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: var(--surface2); }
+.dd-item .dd-nom { flex: 1; line-height: 1.3; }
+.dd-item .dd-peso { font-size: 12px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+
+/* FORMATO CARD */
+.fmt-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 11px; margin-bottom: 7px; }
+.fmt-name { font-size: 12px; font-weight: 500; margin-bottom: 6px; line-height: 1.3; color: var(--text); }
+.fmt-row { display: flex; align-items: center; gap: 8px; }
+.fmt-peso { font-size: 11px; color: var(--text3); white-space: nowrap; }
+.fmt-row input { margin-bottom: 0; width: 90px; flex-shrink: 0; font-size: 13px; padding: 6px 8px; }
+.fmt-kg { font-size: 13px; font-weight: 600; color: var(--accent); margin-left: auto; white-space: nowrap; min-width: 60px; text-align: right; }
+
+/* CUAD LIST SCROLL */
+.cuad-scroll { max-height: 260px; overflow-y: auto; margin-bottom: .875rem; }
+
+/* EMPTY STATE */
+.empty { text-align: center; padding: 2.5rem 1rem; color: var(--text3); }
+.empty .e-icon { font-size: 40px; margin-bottom: .75rem; }
+.empty p { font-size: 13px; }
+
+/* SUCCESS */
+.success-screen { text-align: center; padding: 2.5rem 1rem; }
+.check-icon { font-size: 56px; margin-bottom: 1rem; }
+.success-screen h2 { font-size: 20px; font-weight: 700; margin-bottom: .375rem; }
+.success-screen p { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
+
+/* SPINNER */
+.spinner { text-align: center; padding: 2rem; color: var(--text3); font-size: 13px; }
+
+/* KG TOTAL CHIP */
+.kg-total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: .625rem; }
+.kg-total-chip { font-size: 14px; font-weight: 700; color: var(--accent); background: var(--accent-bg); padding: 3px 10px; border-radius: 20px; }
+
+
+
+/* JEFE COSECHA */
+.jcc-sector-block{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:.875rem 1rem;margin-bottom:.75rem;}
+.jcc-sector-title{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:.625rem;letter-spacing:.03em;}
+.jcc-stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:.75rem;}
+.jcc-stat{background:var(--surface);border-radius:var(--radius-sm);padding:.5rem;text-align:center;border:1px solid var(--border);}
+.jcc-stat-val{font-size:17px;font-weight:700;color:var(--accent);}
+.jcc-stat-lbl{font-size:10px;color:var(--text2);margin-top:1px;}
+.jcc-cuads-list{display:flex;flex-direction:column;gap:4px;}
+.jcc-cuad-row{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 8px;background:var(--surface);border-radius:var(--radius-sm);border:1px solid var(--border);flex-wrap:wrap;}
+.jcc-cuad-num{font-weight:600;color:var(--text);min-width:60px;}
+.jcc-cuad-jc{color:var(--text2);flex:1;min-width:80px;}
+.jcc-cuad-has{color:var(--accent);font-weight:500;}
+.jcc-cuad-jorn{color:var(--text2);}
+.jcc-cuad-kg{color:var(--amber);font-weight:500;}
+.jcc-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border2);background:transparent;transition:all .15s;}
+.jcc-dot.filled{background:var(--accent);border-color:var(--accent);}
+.jcc-dot.error{background:var(--red);border-color:var(--red);}
+
+/* PIN PAD */
+.pin-display { display: flex; gap: 10px; justify-content: center; margin: 1.25rem 0 1rem; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border2); background: transparent; transition: all .15s; }
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-dot.error { background: var(--red); border-color: var(--red); }
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: .75rem; }
+.pin-key { padding: 16px; font-size: 20px; font-weight: 500; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; transition: all .1s; user-select: none; color: var(--text); }
+.pin-key:active { background: var(--accent-bg); border-color: var(--accent); transform: scale(.95); }
+.pin-key.del { font-size: 16px; color: var(--text2); }
+.pin-key.empty { background: transparent; border: none; cursor: default; }
+.pin-error { font-size: 13px; color: var(--red); text-align: center; margin-bottom: .5rem; min-height: 20px; }
+.cuad-access-box { background: var(--accent-bg); border: 1px solid var(--accent); border-radius: var(--radius); padding: .875rem 1rem; margin-bottom: .875rem; }
+.cuad-access-box .cuad-num { font-size: 32px; font-weight: 700; color: var(--accent); text-align: center; }
+.cuad-access-box .cuad-lbl { font-size: 12px; color: var(--accent-text); text-align: center; margin-top: 2px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ── LOGIN ─────────────────────────── -->
+<div id="s-login" class="screen active">
+  <div style="padding-top:2.5rem;text-align:center;margin-bottom:1.5rem;">
+    <div style="font-size:52px;margin-bottom:.5rem;">🌿</div>
+    <h1 style="font-size:24px;font-weight:700;">Cosecha</h1>
+    <div style="font-size:13px;color:var(--text2);margin-top:2px;" id="fecha-hoy"></div>
+  </div>
+  <div class="card">
+    <div class="field"><label>Usuario</label>
+      <input type="text" id="login-user" placeholder="Ej: icastro" autocomplete="username" autocapitalize="none"></div>
+    <div class="field"><label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="pin-error" id="login-error" style="margin-bottom:.5rem;"></div>
+  </div>
+  <button class="btn-primary" id="login-btn" onclick="doLogin()">Ingresar →</button>
+  <div id="status-bar" class="status warn" style="margin-top:.75rem;">⏳ Conectando...</div>
+</div>
+
+<!-- ── ADMIN ─────────────────────────── -->
+<div id="s-admin" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+    <div class="page-header" style="margin-bottom:0;">
+      <div class="eyebrow">Administrador</div>
+      <h1>Gestión de usuarios</h1>
+    </div>
+    <button class="btn-sm" onclick="doLogout()">Salir</button>
+  </div>
+  <div class="card">
+    <h3 id="adm-form-titulo" style="margin-bottom:.75rem;">Nuevo usuario</h3>
+    <div class="field"><label>Usuario <span style="font-size:11px;color:var(--text3);">(sin espacios, sin mayúsculas)</span></label>
+      <input type="text" id="adm-user" placeholder="Ej: icastro" autocapitalize="none"></div>
+    <div class="field"><label>Nombre completo</label>
+      <input type="text" id="adm-nombre" placeholder="Ej: Isaías Castro"></div>
+    <div class="field"><label>Contraseña <span style="font-size:11px;color:var(--text3);">(mín. 6 caracteres)</span></label>
+      <input type="password" id="adm-pass" placeholder="••••••••"></div>
+    <div class="field"><label>Rol</label>
+      <select id="adm-rol" onchange="admToggleCampos()">
+        <option value="jc">Jefe de cuadrilla</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="jefe_cosecha">Jefe de cosecha</option>
+      </select>
+    </div>
+    <div class="field" id="adm-campo-cuad" style="display:none;">
+      <label>N° de cuadrilla asignada</label>
+      <input type="number" id="adm-cuad" placeholder="Ej: 5" min="1" max="300"></div>
+    <div class="field" id="adm-campo-ciclo" style="display:none;">
+      <label>Ciclo asignado</label>
+      <select id="adm-ciclo"><option value="">Sin ciclo fijo</option></select></div>
+    <div class="field" id="adm-campo-sectores" style="display:none;">
+      <label>Sectores asignados <span style="font-size:11px;color:var(--text3);">(selección múltiple)</span></label>
+      <select id="adm-sectores" multiple style="height:100px;">
+        <option value="O1E1">O1E1</option><option value="O1E2">O1E2</option>
+        <option value="O2E1">O2E1</option><option value="O2E2">O2E2</option>
+        <option value="O3E1">O3E1</option><option value="O3E2">O3E2</option>
+      </select></div>
+    <div class="pin-error" id="adm-error" style="margin-bottom:.5rem;"></div>
+    <button class="btn-primary" id="adm-guardar-btn" onclick="admGuardar()">Guardar usuario</button>
+    <button class="btn-secondary" onclick="admLimpiarForm()">Cancelar</button>
+  </div>
+  <div id="adm-lista" style="margin-top:.25rem;"></div>
+</div>
+
+<!-- ── JC ACCESO ─────────────────────────── -->
+<div id="s-jc-acceso" class="screen">
+  <div class="back-btn" onclick="goTo('s-rol')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div class="page-header">
+    <div class="eyebrow">Jefe de cuadrilla</div>
+    <h1>¿Cuál es tu cuadrilla?</h1>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:12px;color:var(--text2);margin-bottom:.75rem;">Ingresa tu número de cuadrilla (001–300)</p>
+    <div id="cuad-display-num" style="font-size:38px;font-weight:700;color:var(--accent);letter-spacing:.1em;min-height:52px;margin-bottom:.75rem;">—</div>
+    <div class="pin-grid" id="cuad-grid"></div>
+    <div class="pin-error" id="cuad-error"></div>
+  </div>
+  <button class="btn-primary" id="cuad-confirm-btn" onclick="confirmarCuadrilla()" style="display:none;">Continuar →</button>
+</div>
+
+<!-- ── SUPERVISOR PIN ─────────────────────────── -->
+<div id="s-sup-pin" class="screen">
+  <div class="back-btn" onclick="goTo('s-rol')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div class="page-header">
+    <div class="eyebrow">Supervisor</div>
+    <h1>Ingresa tu PIN</h1>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:.5rem;">PIN de 4 dígitos para supervisores</p>
+    <div class="pin-display">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-grid" id="pin-grid"></div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
+
+<!-- ── JC LOGIN ─────────────────────────── -->
+<div id="s-jc-login" class="screen">
+  <div class="back-btn" onclick="doLogout()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div class="page-header">
+    <div class="eyebrow">Jefe de cuadrilla</div>
+    <h1>Identificación</h1>
+  </div>
+  <div class="card">
+    <div class="field"><label>Tu nombre</label><input type="text" id="jc-nombre" placeholder="Nombre completo"></div>
+    <div class="field" style="display:none;"><label>N° de cuadrilla</label><input type="number" id="jc-ncuad" placeholder="Ej: 5" min="1"></div>
+    <div class="field">
+      <label>Ciclo de cosecha</label>
+      <select id="jc-ciclo"><option value="">Seleccionar ciclo...</option></select>
+    </div>
+    <div class="field">
+      <label>Horario de reporte</label>
+      <div class="hora-group">
+        <button class="hora-btn" data-h="10:30" onclick="selH(this,'jc')">10:30 am</button>
+        <button class="hora-btn" data-h="12:00" onclick="selH(this,'jc')">12:00 pm</button>
+        <button class="hora-btn" data-h="15:30" onclick="selH(this,'jc')">3:30 pm</button>
+      </div>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="irFormJC()">Continuar →</button>
+</div>
+
+<!-- ── JC FORM ─────────────────────────── -->
+<div id="s-jc-form" class="screen">
+  <div class="back-btn" onclick="goTo('s-jc-login')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem;">
+    <div class="page-header" style="margin-bottom:0;">
+      <div class="eyebrow">Ingreso de datos</div>
+      <h1 id="jc-form-title">Cuadrilla —</h1>
+    </div>
+    <span id="jc-badge" class="badge badge-blue" style="margin-top:4px;"></span>
+  </div>
+
+  <div class="card">
+    <!-- info cuadrilla -->
+    <div class="info-box">
+      <div class="info-row"><span class="lbl">Cuadrilla</span><span class="val" id="jc-lbl-cuad">—</span></div>
+      <div class="info-row"><span class="lbl">Ciclo</span><span class="val" id="jc-lbl-ciclo">—</span></div>
+    </div>
+    <div class="field">
+      <label>Sector</label>
+      <select id="jc-sector" onchange="jcUpdParc()"><option value="">Seleccionar sector...</option></select>
+    </div>
+    <div class="field">
+      <label>Parcela</label>
+      <select id="jc-parcela" onchange="jcUpdFactor()"><option value="">Seleccionar parcela...</option></select>
+    </div>
+    <div id="jc-factor-box" class="info-box" style="display:none;">
+      <div class="info-row"><span class="lbl">Factor</span><span class="val"><span id="jc-factor">—</span> has/hilera</span></div>
+      <div class="info-row"><span class="lbl">Total hileras</span><span class="val" id="jc-hiltot">—</span></div>
+    </div>
+    <div class="field">
+      <label>Manejo</label>
+      <div style="display:flex;gap:8px;margin-bottom:.875rem;">
+        <button class="hora-btn btn-manejo" data-m="CONV" onclick="selManejo(this)">Convencional</button>
+        <button class="hora-btn btn-manejo" data-m="ORG" onclick="selManejo(this)">Orgánico</button>
+      </div>
+    </div>
+    <div class="field"><label>Hileras recorridas</label><input type="number" id="jc-hileras" placeholder="N° de hileras" min="0" oninput="jcCalc()"></div>
+    <div class="info-box" style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;color:var(--text2);">Has calculadas</span>
+      <span id="jc-has-calc" class="has-big">—</span>
+    </div>
+    <div class="field" style="margin-top:.875rem;"><label>N° de jornales</label><input type="number" id="jc-jornales" placeholder="N° de personas" min="0"></div>
+
+    <!-- SECCIÓN KG -->
+    <div id="jc-kg-sec" style="display:none;">
+      <hr class="divider">
+      <div class="kg-total-row">
+        <label style="margin-bottom:0;">Bandejas por formato <span style="font-weight:400;color:var(--text3);">(máx. 4)</span></label>
+        <span id="jc-kg-total" class="kg-total-chip">0.00 kg</span>
+      </div>
+      <div id="jc-fmt-list"></div>
+      <div id="jc-search-sec" style="display:none;">
+        <div class="search-wrap">
+          <input type="text" id="jc-search" placeholder="Buscar formato..." oninput="buscar()" autocomplete="off">
+          <div class="dropdown" id="jc-dd"></div>
+        </div>
+      </div>
+      <button id="jc-btn-add" class="btn-secondary" onclick="mostrarSearch()" style="margin-top:4px;">+ Agregar formato</button>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="jcGuardar()">💾 Guardar y enviar</button>
+</div>
+
+<!-- ── JC OK ─────────────────────────── -->
+<div id="s-jc-ok" class="screen">
+  <div class="success-screen">
+    <div class="check-icon">✅</div>
+    <h2>¡Datos enviados!</h2>
+    <p>El supervisor puede ver tu reporte en tiempo real.</p>
+    <div class="card" id="ok-card" style="text-align:left;"></div>
+    <button class="btn-secondary" onclick="doLogout()" style="margin-top:1rem;">🏠 Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- ── SUP LOGIN ─────────────────────────── -->
+<div id="s-sup-login" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+    <div class="back-btn" style="margin-bottom:0;" onclick="doLogout()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div class="page-header" style="margin-bottom:0;">
+    <div class="eyebrow">Supervisor</div>
+    <h1>Consolidado</h1>
+  </div>
+    <button class="btn-sm" onclick="doLogout()">Salir</button>
+  </div>
+  <div class="card">
+    <div class="field"><label>Tu nombre</label><input type="text" id="sup-nombre" placeholder="Nombre del supervisor"></div>
+    <div class="field"><label>Ciclo de cosecha</label><select id="sup-ciclo"><option value="">Seleccionar ciclo...</option></select></div>
+    <div class="field">
+      <label>Horario de reporte</label>
+      <div class="hora-group">
+        <button class="hora-btn" data-h="10:30" onclick="selH(this,'sup')">10:30 am</button>
+        <button class="hora-btn" data-h="12:00" onclick="selH(this,'sup')">12:00 pm</button>
+        <button class="hora-btn" data-h="15:30" onclick="selH(this,'sup')">3:30 pm</button>
+      </div>
+    </div>
+  </div>
+  <button class="btn-primary" onclick="supCargar()">📊 Ver consolidado</button>
+</div>
+
+<!-- ── SUP CONSOLIDADO ─────────────────────────── -->
+<div id="s-sup" class="screen">
+  <div class="back-btn" onclick="goTo('s-sup-login')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+    <div class="page-header" style="margin-bottom:0;">
+      <div class="eyebrow" id="sup-ciclo-lbl">—</div>
+      <h1>Consolidado</h1>
+    </div>
+    <span id="sup-badge" class="badge badge-blue"></span>
+  </div>
+  <div id="sup-spinner" class="spinner">Cargando datos de los JC...</div>
+  <div id="sup-body" style="display:none;">
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-val" id="s-cuad">0</div><div class="stat-lbl">Cuadrillas</div></div>
+      <div class="stat-box"><div class="stat-val" id="s-jorn">0</div><div class="stat-lbl">Jornales</div></div>
+      <div class="stat-box"><div class="stat-val" id="s-has">0.00</div><div class="stat-lbl">Has recorridas</div></div>
+      <div class="stat-box" id="s-kg-box" style="display:none;"><div class="stat-val" id="s-kg">0</div><div class="stat-lbl">Kg totales</div></div>
+    </div>
+    <div class="cuad-scroll" id="sup-lista"></div>
+    <div class="msg-wrap">
+      <div class="msg-head"><h3>📱 Mensaje para WhatsApp</h3><button class="btn-sm" onclick="copiar()">Copiar</button></div>
+      <div class="msg-body" id="sup-msg"></div>
+      <div class="copied" id="copiado">✓ ¡Copiado al portapapeles!</div>
+    </div>
+    <button class="btn-secondary" onclick="supCargar()">↻ Actualizar datos</button>
+    <button class="btn-danger" id="btn-limpiar" onclick="limpiar()" style="display:none;">🗑 Limpiar datos del ciclo</button>
+  </div>
+  <div id="sup-vacio" style="display:none;" class="empty">
+    <div class="e-icon">📭</div>
+    <p>Sin datos aún.<br>Los JC no han enviado reportes para este ciclo y horario.</p>
+  </div>
+</div>
+
+
+<!-- ── JEFE COSECHA PIN ─────────────────────────── -->
+<div id="s-jcc-pin" class="screen">
+  <div class="back-btn" onclick="goTo('s-rol')"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div class="page-header">
+    <div class="eyebrow">Jefe de cosecha</div>
+    <h1>Ingresa tu PIN</h1>
+  </div>
+  <div class="card" style="text-align:center;">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:.5rem;">PIN de 4 dígitos</p>
+    <div class="pin-display">
+      <div class="jcc-dot" id="jccd0"></div>
+      <div class="jcc-dot" id="jccd1"></div>
+      <div class="jcc-dot" id="jccd2"></div>
+      <div class="jcc-dot" id="jccd3"></div>
+    </div>
+    <div class="pin-grid" id="jcc-pin-grid"></div>
+    <div class="pin-error" id="jcc-pin-error"></div>
+  </div>
+</div>
+
+<!-- ── JEFE COSECHA DASHBOARD ─────────────────────────── -->
+<div id="s-jcc-dash" class="screen">
+  <div class="back-btn" onclick="doLogout()"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 12L6 8l4-4"/></svg> Volver</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;">
+    <div class="page-header" style="margin-bottom:0;">
+      <div class="eyebrow" id="jcc-sectores-lbl">—</div>
+      <h1 id="jcc-titulo">—</h1>
+    </div>
+    <span id="jcc-badge" class="badge badge-blue" style="margin-top:4px;"></span>
+  </div>
+  <!-- Selector ciclo y horario -->
+  <div class="card" style="margin-bottom:.875rem;">
+    <div class="field" style="margin-bottom:.625rem;">
+      <label>Ciclo de cosecha</label>
+      <select id="jcc-ciclo-sel" onchange="renderJccDash()"><option value="">Seleccionar ciclo...</option></select>
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label>Horario</label>
+      <div class="hora-group">
+        <button class="hora-btn btn-h-jcc" data-h="10:30" onclick="jccSelHorario(this)">10:30 am</button>
+        <button class="hora-btn btn-h-jcc" data-h="12:00" onclick="jccSelHorario(this)">12:00 pm</button>
+        <button class="hora-btn btn-h-jcc" data-h="15:30" onclick="jccSelHorario(this)">3:30 pm</button>
+      </div>
+    </div>
+  </div>
+  <div id="jcc-spinner" style="font-size:13px;color:var(--text2);text-align:center;padding:1.5rem 0;display:none;">Cargando datos...</div>
+  <div id="jcc-body" style="display:none;">
+    <!-- Totales globales -->
+    <div class="stats-grid" style="margin-bottom:.875rem;">
+      <div class="stat-box"><div class="stat-val" id="jcc-tot-cuad">0</div><div class="stat-lbl">Cuadrillas</div></div>
+      <div class="stat-box"><div class="stat-val" id="jcc-tot-jorn">0</div><div class="stat-lbl">Jornales</div></div>
+      <div class="stat-box"><div class="stat-val" id="jcc-tot-has">0.00</div><div class="stat-lbl">Has totales</div></div>
+      <div class="stat-box" id="jcc-tot-kg-box" style="display:none;"><div class="stat-val" id="jcc-tot-kg">0</div><div class="stat-lbl">Kg totales</div></div>
+    </div>
+    <!-- Detalle por sector -->
+    <div id="jcc-stats"></div>
+    <button class="btn-secondary" onclick="renderJccDash()"><i class="ti ti-refresh" aria-hidden="true"></i> Actualizar</button>
+  </div>
+  <div id="jcc-empty" style="display:none;" class="empty">
+    <div class="e-icon">📭</div>
+    <p>Sin datos aún.<br>Selecciona ciclo y horario para ver el avance.</p>
+  </div>
+</div>
+
+<!-- BANNER INSTALACIÓN PWA -->
+<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:999;padding:.75rem 1rem;background:#2d6a4f;color:#fff;display:none;align-items:center;gap:10px;max-width:480px;margin:0 auto;">
+  <div style="flex:1;">
+    <div style="font-size:13px;font-weight:600;">Instalar app en tu celular</div>
+    <div style="font-size:11px;opacity:.85;">Úsala sin internet, desde tu pantalla de inicio</div>
+  </div>
+  <button id="pwa-install-btn" style="padding:7px 14px;background:#fff;color:#2d6a4f;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Instalar</button>
+  <button id="pwa-dismiss-btn" style="padding:7px 10px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:6px;font-size:13px;cursor:pointer;">Ahora no</button>
+</div>
+
+</div><!-- .app -->
+
+<script>
+// ═══════════════════════════════════════
+// AUTENTICACIÓN FIREBASE
+// ═══════════════════════════════════════
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'cosecha2025'; // Cambiar antes de producción
+let _rolActual = null;
+let _userActual = null;
+
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!user || !pass) { errEl.textContent = 'Ingresa usuario y contraseña'; return; }
+  btn.textContent = 'Ingresando...'; btn.disabled = true;
+
+  // Admin hardcodeado
+  if (user === ADMIN_USER && pass === ADMIN_PASS) {
+    _rolActual = 'admin'; _userActual = { username: 'admin', nombre: 'Administrador', rol: 'admin' };
+    btn.textContent = 'Ingresar →'; btn.disabled = false;
+    cargarListaUsuarios();
+    goTo('s-admin'); return;
+  }
+
+  try {
+    const email = `${user}@cosecha.app`;
+    const cred = await window._fb.signInWithEmailAndPassword(window._auth, email, pass);
+    const snap = await window._fb.getDoc(window._fb.doc(window._db, 'usuarios', user));
+    if (!snap.exists() || !snap.data().activo) {
+      await window._fb.signOut(window._auth);
+      errEl.textContent = 'Usuario inactivo. Contacta al administrador.';
+      btn.textContent = 'Ingresar →'; btn.disabled = false; return;
+    }
+    const perfil = snap.data();
+    _rolActual = perfil.rol; _userActual = perfil;
+    btn.textContent = 'Ingresar →'; btn.disabled = false;
+
+    if (perfil.rol === 'jc') {
+      // Pre-llenar nombre y cuadrilla desde Firestore
+      document.getElementById('jc-nombre').value = perfil.nombre || '';
+      document.getElementById('jc-ncuad').value = perfil.cuadrilla || '';
+      document.getElementById('jc-lbl-cuad').textContent = `Cuadrilla ${perfil.cuadrilla || '—'}`;
+      document.getElementById('jc-lbl-ciclo').textContent = perfil.ciclo || '—';
+      // Pre-seleccionar ciclo si está asignado
+      if (perfil.ciclo) {
+        document.getElementById('jc-ciclo').value = perfil.ciclo;
+        jcH = ''; // horario aún sin seleccionar
+      }
+      goTo('s-jc-login');
+    } else if (perfil.rol === 'supervisor') {
+      document.getElementById('sup-nombre').value = perfil.nombre || '';
+      goTo('s-sup-login');
+    } else if (perfil.rol === 'jefe_cosecha') {
+      window.jcCosechaActual = perfil;
+      goTo('s-jcc-dash');
+    }
+  } catch(e) {
+    errEl.textContent = 'Usuario o contraseña incorrectos';
+    btn.textContent = 'Ingresar →'; btn.disabled = false;
+  }
+}
+
+async function doLogout() {
+  try { await window._fb.signOut(window._auth); } catch(e) {}
+  _rolActual = null; _userActual = null;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').textContent = '';
+  goTo('s-login');
+}
+
+// ═══════════════════════════════════════
+// ADMINISTRACIÓN DE USUARIOS
+// ═══════════════════════════════════════
+function admToggleCampos() {
+  const rol = document.getElementById('adm-rol').value;
+  document.getElementById('adm-campo-cuad').style.display = rol === 'jc' ? 'block' : 'none';
+  document.getElementById('adm-campo-ciclo').style.display = rol === 'supervisor' ? 'block' : 'none';
+  document.getElementById('adm-campo-sectores').style.display = rol === 'jefe_cosecha' ? 'block' : 'none';
+}
+
+async function admGuardar() {
+  const username = document.getElementById('adm-user').value.trim().toLowerCase();
+  const nombre = document.getElementById('adm-nombre').value.trim();
+  const pass = document.getElementById('adm-pass').value;
+  const rol = document.getElementById('adm-rol').value;
+  const errEl = document.getElementById('adm-error');
+  const btn = document.getElementById('adm-guardar-btn');
+  errEl.textContent = '';
+  if (!username || !nombre || !pass) { errEl.textContent = 'Completa todos los campos'; return; }
+  if (pass.length < 6) { errEl.textContent = 'La contraseña debe tener al menos 6 caracteres'; return; }
+  btn.textContent = 'Guardando...'; btn.disabled = true;
+  const email = `${username}@cosecha.app`;
+  try {
+    await window._fb.createUserWithEmailAndPassword(window._auth, email, pass);
+    // Re-login admin after creating user (Firebase auto-logs new user)
+    await window._fb.signInWithEmailAndPassword(window._auth, `${ADMIN_USER}@cosecha.app`, ADMIN_PASS).catch(()=>{});
+    const perfil = {
+      username, nombre, rol, activo: true,
+      cuadrilla: rol === 'jc' ? (document.getElementById('adm-cuad').value || null) : null,
+      ciclo: rol === 'supervisor' ? (document.getElementById('adm-ciclo').value || null) : null,
+      sectores: rol === 'jefe_cosecha'
+        ? Array.from(document.getElementById('adm-sectores').selectedOptions).map(o => o.value)
+        : null,
+      creado_en: new Date().toISOString()
+    };
+    await window._fb.setDoc(window._fb.doc(window._db, 'usuarios', username), perfil);
+    btn.textContent = 'Guardar usuario'; btn.disabled = false;
+    admLimpiarForm();
+    cargarListaUsuarios();
+  } catch(e) {
+    errEl.textContent = e.code === 'auth/email-already-in-use' ? 'Ese usuario ya existe' : ('Error: ' + e.message);
+    btn.textContent = 'Guardar usuario'; btn.disabled = false;
+  }
+}
+
+async function cargarListaUsuarios() {
+  const lista = document.getElementById('adm-lista');
+  lista.innerHTML = '<div style="font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin:.875rem 0 .375rem;">Usuarios registrados</div>';
+  try {
+    const snap = await window._fb.getDocs(window._fb.collection(window._db, 'usuarios'));
+    if (snap.empty) { lista.innerHTML += '<p style="font-size:13px;color:var(--text3);text-align:center;padding:1rem 0;">Sin usuarios creados aún.</p>'; return; }
+    const ROLES = { jc: 'Jefe de cuadrilla', supervisor: 'Supervisor', jefe_cosecha: 'Jefe de cosecha' };
+    snap.forEach(d => {
+      const u = d.data();
+      const card = document.createElement('div');
+      card.className = 'card'; card.style.marginBottom = '.5rem';
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;">${u.nombre}</div>
+            <div style="font-size:11px;color:var(--text2);">@${u.username} · ${ROLES[u.rol]||u.rol}${u.cuadrilla?' · Cuad.'+u.cuadrilla:''}${u.ciclo?' · '+u.ciclo:''}${u.sectores?' · '+u.sectores.join(', '):''}</div>
+            <span style="font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;${u.activo?'background:var(--accent-bg);color:var(--accent-text);':'background:var(--red-bg);color:var(--red);'}">${u.activo?'Activo':'Inactivo'}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <button class="btn-sm" onclick="admToggleActivo('${u.username}',${u.activo})">${u.activo?'Desactivar':'Activar'}</button>
+            <button class="btn-sm" style="color:var(--red);" onclick="admEliminar('${u.username}')">Eliminar</button>
+          </div>
+        </div>`;
+      lista.appendChild(card);
+    });
+  } catch(e) { lista.innerHTML += `<p style="font-size:13px;color:var(--red);">Error cargando usuarios: ${e.message}</p>`; }
+}
+
+async function admToggleActivo(username, activo) {
+  await window._fb.setDoc(window._fb.doc(window._db, 'usuarios', username), { activo: !activo }, { merge: true });
+  cargarListaUsuarios();
+}
+
+async function admEliminar(username) {
+  if (!confirm(`¿Eliminar al usuario @${username}? Esta acción no se puede deshacer.`)) return;
+  await window._fb.deleteDoc(window._fb.doc(window._db, 'usuarios', username));
+  cargarListaUsuarios();
+}
+
+function admLimpiarForm() {
+  ['adm-user','adm-nombre','adm-pass','adm-cuad'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('adm-rol').value = 'jc';
+  document.getElementById('adm-error').textContent = '';
+  document.getElementById('adm-form-titulo').textContent = 'Nuevo usuario';
+  admToggleCampos();
+}
+
+// ═══════════════════════════════════════
+// ACCESO POR CUADRILLA (JC) — solo para compatibilidad
+// ═══════════════════════════════════════
+const SUP_PIN = '1234';
+let pinActual = '';
+let cuadActual = '';
+
+function buildCuadGrid() {
+  const grid = document.getElementById('cuad-grid');
+  if (!grid) return;
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  grid.innerHTML = '';
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    if (k === '') {
+      btn.className = 'pin-key empty';
+      btn.disabled = true;
+    } else if (k === '⌫') {
+      btn.className = 'pin-key del';
+      btn.textContent = '⌫';
+      btn.onclick = cuadDel;
+    } else {
+      btn.className = 'pin-key';
+      btn.textContent = k;
+      btn.onclick = () => cuadPress(k);
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function cuadPress(d) {
+  if (cuadActual.length >= 3) return;
+  cuadActual += d;
+  actualizarCuadDisplay();
+}
+
+function cuadDel() {
+  cuadActual = cuadActual.slice(0, -1);
+  actualizarCuadDisplay();
+  document.getElementById('cuad-error').textContent = '';
+}
+
+function actualizarCuadDisplay() {
+  const el = document.getElementById('cuad-display-num');
+  const btn = document.getElementById('cuad-confirm-btn');
+  if (!el) return;
+  if (cuadActual.length === 0) {
+    el.textContent = '—';
+    el.style.color = 'var(--text3)';
+    btn.style.display = 'none';
+  } else {
+    el.textContent = cuadActual.padStart(3, '0');
+    el.style.color = 'var(--accent)';
+    btn.style.display = cuadActual.length >= 1 ? 'block' : 'none';
+  }
+}
+
+function confirmarCuadrilla() {
+  if (!cuadActual || parseInt(cuadActual) < 1 || parseInt(cuadActual) > 300) {
+    document.getElementById('cuad-error').textContent = 'Ingresa un número válido (001–300)';
+    return;
+  }
+  document.getElementById('jc-ncuad').value = String(parseInt(cuadActual));
+  cuadActual = '';
+  actualizarCuadDisplay();
+  goTo('s-jc-login');
+}
+
+function buildPinGrid() {
+  const grid = document.getElementById('pin-grid');
+  if (!grid) return;
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  grid.innerHTML = '';
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    if (k === '') {
+      btn.className = 'pin-key empty';
+      btn.disabled = true;
+    } else if (k === '⌫') {
+      btn.className = 'pin-key del';
+      btn.textContent = '⌫';
+      btn.onclick = pinDel;
+    } else {
+      btn.className = 'pin-key';
+      btn.textContent = k;
+      btn.onclick = () => pinPress(k);
+    }
+    grid.appendChild(btn);
+  });
+}
+
+function pinPress(d) {
+  if (pinActual.length >= 4) return;
+  pinActual += d;
+  actualizarDots();
+  if (pinActual.length === 4) verificarPin();
+}
+
+function pinDel() {
+  pinActual = pinActual.slice(0, -1);
+  actualizarDots();
+  document.getElementById('pin-error').textContent = '';
+  document.querySelectorAll('.pin-dot').forEach(d => d.classList.remove('error'));
+}
+
+function actualizarDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('pd' + i);
+    if (dot) dot.classList.toggle('filled', i < pinActual.length);
+  }
+}
+
+function verificarPin() {
+  if (pinActual === SUP_PIN) {
+    document.getElementById('pin-error').textContent = '';
+    pinActual = '';
+    actualizarDots();
+    goTo('s-sup-login');
+  } else {
+    document.querySelectorAll('.pin-dot').forEach(d => { d.classList.remove('filled'); d.classList.add('error'); });
+    document.getElementById('pin-error').textContent = 'PIN incorrecto, intenta nuevamente';
+    setTimeout(() => {
+      pinActual = '';
+      document.querySelectorAll('.pin-dot').forEach(d => { d.classList.remove('error'); d.classList.remove('filled'); });
+      document.getElementById('pin-error').textContent = '';
+    }, 1200);
+  }
+}
+
+
+// ═══════════════════════════════════════
+// JEFES DE COSECHA — CONFIG Y FUNCIONES
+// ═══════════════════════════════════════
+const JEFES_COSECHA = [
+  { nombre: 'Juan',    pin: '2345', sectores: ['O1E1','O1E2'] },
+  { nombre: 'María',   pin: '3456', sectores: ['O2E1','O2E2'] },
+  { nombre: 'Carlos',  pin: '4567', sectores: ['O3E1','O3E2'] },
+];
+
+let jcCosechaActual = null;
+let jcCosechaPinActual = '';
+
+function buildJcCosechaPinGrid() {
+  const grid = document.getElementById('jcc-pin-grid');
+  if (!grid) return;
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  grid.innerHTML = '';
+  keys.forEach(k => {
+    const btn = document.createElement('button');
+    if (k === '') { btn.className = 'pin-key empty'; btn.disabled = true; }
+    else if (k === '⌫') { btn.className = 'pin-key del'; btn.textContent = '⌫'; btn.onclick = jccPinDel; }
+    else { btn.className = 'pin-key'; btn.textContent = k; btn.onclick = () => jccPinPress(k); }
+    grid.appendChild(btn);
+  });
+}
+
+function jccPinPress(d) {
+  if (jcCosechaPinActual.length >= 4) return;
+  jcCosechaPinActual += d;
+  actualizarJccDots();
+  if (jcCosechaPinActual.length === 4) verificarJccPin();
+}
+
+function jccPinDel() {
+  jcCosechaPinActual = jcCosechaPinActual.slice(0, -1);
+  actualizarJccDots();
+  document.getElementById('jcc-pin-error').textContent = '';
+  document.querySelectorAll('.jcc-dot').forEach(d => d.classList.remove('error'));
+}
+
+function actualizarJccDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('jccd' + i);
+    if (dot) dot.classList.toggle('filled', i < jcCosechaPinActual.length);
+  }
+}
+
+function verificarJccPin() {
+  const jefe = JEFES_COSECHA.find(j => j.pin === jcCosechaPinActual);
+  if (jefe) {
+    jcCosechaActual = jefe;
+    jcCosechaPinActual = '';
+    actualizarJccDots();
+    document.getElementById('jcc-pin-error').textContent = '';
+    cargarVistaJcc();
+  } else {
+    document.querySelectorAll('.jcc-dot').forEach(d => { d.classList.remove('filled'); d.classList.add('error'); });
+    document.getElementById('jcc-pin-error').textContent = 'PIN incorrecto';
+    setTimeout(() => {
+      jcCosechaPinActual = '';
+      document.querySelectorAll('.jcc-dot').forEach(d => { d.classList.remove('error','filled'); });
+      document.getElementById('jcc-pin-error').textContent = '';
+    }, 1200);
+  }
+}
+
+async function cargarVistaJcc() {
+  if (!jcCosechaActual || !supH) {
+    // pedir horario si no está seleccionado
+    goTo('s-jcc-dash');
+    return;
+  }
+  goTo('s-jcc-dash');
+  renderJccDash();
+}
+
+async function jccSelHorario(btn) {
+  document.querySelectorAll('.btn-h-jcc').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  supH = btn.dataset.h;
+  await renderJccDash();
+}
+
+async function renderJccDash() {
+  if (!supH) return;
+  const etq = {'10:30':'10:30 am','12:00':'12:00 pm','15:30':'3:30 pm'};
+  document.getElementById('jcc-titulo').textContent = jcCosechaActual.nombre;
+  document.getElementById('jcc-sectores-lbl').textContent = jcCosechaActual.sectores.join(' · ');
+  document.getElementById('jcc-badge').textContent = etq[supH] || supH;
+
+  // Cargar todos los ciclos disponibles y filtrar por sectores del jefe
+  const ciclo = document.getElementById('jcc-ciclo-sel').value;
+  if (!ciclo) {
+    document.getElementById('jcc-body').style.display = 'none';
+    document.getElementById('jcc-empty').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('jcc-spinner').style.display = 'block';
+  document.getElementById('jcc-body').style.display = 'none';
+  document.getElementById('jcc-empty').style.display = 'none';
+
+  let cuads = [];
+  try {
+    const { collection, getDocs, query, where } = window._fb;
+    const q = query(collection(window._db, 'reportes'), where('ciclo','==',ciclo), where('horario','==',supH));
+    const snap = await getDocs(q);
+    snap.forEach(d => cuads.push(d.data()));
+  } catch(e) {
+    const prefix = `rpt__${ciclo}__${supH}__`;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix)) { try { cuads.push(JSON.parse(localStorage.getItem(k))); } catch(e2) {} }
+    }
+  }
+
+  // Filtrar solo cuadrillas de los sectores del jefe
+  const misSectores = jcCosechaActual.sectores;
+  cuads = cuads.filter(c => misSectores.includes(c.sector));
+  cuads.sort((a, b) => parseInt(a.ncuad) - parseInt(b.ncuad));
+
+  document.getElementById('jcc-spinner').style.display = 'none';
+
+  if (cuads.length === 0) {
+    document.getElementById('jcc-empty').style.display = 'block';
+    return;
+  }
+
+  const esKg = supH !== '10:30';
+
+  // Stats por sector
+  const statsContainer = document.getElementById('jcc-stats');
+  statsContainer.innerHTML = '';
+  misSectores.forEach(sec => {
+    const cuadsSec = cuads.filter(c => c.sector === sec);
+    if (cuadsSec.length === 0) return;
+    const totH = cuadsSec.reduce((s,c) => s+c.has, 0).toFixed(2);
+    const totJ = cuadsSec.reduce((s,c) => s+c.jornales, 0);
+    const totKg = esKg ? cuadsSec.reduce((s,c) => s+(c.totalKg||0), 0).toFixed(0) : null;
+    const div = document.createElement('div');
+    div.className = 'jcc-sector-block';
+    div.innerHTML = `
+      <div class="jcc-sector-title">${sec}</div>
+      <div class="jcc-stat-row">
+        <div class="jcc-stat"><div class="jcc-stat-val">${cuadsSec.length}</div><div class="jcc-stat-lbl">Cuadrillas</div></div>
+        <div class="jcc-stat"><div class="jcc-stat-val">${totJ}</div><div class="jcc-stat-lbl">Jornales</div></div>
+        <div class="jcc-stat"><div class="jcc-stat-val">${totH}</div><div class="jcc-stat-lbl">Has</div></div>
+        ${esKg ? `<div class="jcc-stat"><div class="jcc-stat-val">${Number(totKg).toLocaleString('es-PE')}</div><div class="jcc-stat-lbl">Kg</div></div>` : ''}
+      </div>
+      <div class="jcc-cuads-list">${cuadsSec.map(c => `
+        <div class="jcc-cuad-row">
+          <span class="jcc-cuad-num">Cuad. ${c.ncuad}</span>
+          <span class="jcc-cuad-jc">${c.jc}</span>
+          <span class="jcc-cuad-has">${c.has} has</span>
+          <span class="jcc-cuad-jorn">${c.jornales} jorn.</span>
+          ${esKg ? `<span class="jcc-cuad-kg">${(c.totalKg||0).toLocaleString('es-PE')} kg</span>` : ''}
+        </div>`).join('')}
+      </div>`;
+    statsContainer.appendChild(div);
+  });
+
+  // Totales globales
+  const totHGlobal = cuads.reduce((s,c) => s+c.has, 0).toFixed(2);
+  const totJGlobal = cuads.reduce((s,c) => s+c.jornales, 0);
+  const totKgGlobal = esKg ? cuads.reduce((s,c) => s+(c.totalKg||0), 0) : 0;
+  document.getElementById('jcc-tot-cuad').textContent = cuads.length;
+  document.getElementById('jcc-tot-jorn').textContent = totJGlobal;
+  document.getElementById('jcc-tot-has').textContent = totHGlobal;
+  const kgBox = document.getElementById('jcc-tot-kg-box');
+  if (esKg) { kgBox.style.display = 'block'; document.getElementById('jcc-tot-kg').textContent = totKgGlobal.toLocaleString('es-PE'); }
+  else kgBox.style.display = 'none';
+
+  document.getElementById('jcc-body').style.display = 'block';
+}
+
+// ═══════════════════════════════════════
+// DATOS MAESTROS
+// ═══════════════════════════════════════
+const CICLOS = ["O11A","O11B","O12UM124","O12UM35","O21UM12","O21UM3","O21UM45","O22UM123","O22UM45","O22UM6","O31UM12 (MACETA)","O31AM2","O31UM345 (SUELO)","O31BM34","O32UM3"];
+const SECTORES = ["O1E1","O1E2","O2E1","O2E2","O3E1","O3E2"];
+const PARCELAS = [
+  {s:"O1E1",p:"1.1",h:1.42,n:110},{s:"O1E1",p:"1.2",h:2.59,n:105},{s:"O1E1",p:"1.3",h:2.62,n:110},{s:"O1E1",p:"1.4",h:1.48,n:75},{s:"O1E1",p:"1.5",h:1.78,n:75},{s:"O1E1",p:"1.6",h:0.86,n:39},{s:"O1E1",p:"1.7",h:1.03,n:46},{s:"O1E1",p:"1.8",h:1.18,n:52},{s:"O1E1",p:"1.9",h:1.33,n:58},
+  {s:"O1E1",p:"2.1",h:2.54,n:105},{s:"O1E1",p:"2.2",h:2.54,n:105},{s:"O1E1",p:"2.3",h:2.63,n:110},{s:"O1E1",p:"2.4",h:2.62,n:110},{s:"O1E1",p:"2.5",h:1.80,n:68},{s:"O1E1",p:"2.6",h:1.78,n:75},{s:"O1E1",p:"2.7",h:1.48,n:64},
+  {s:"O1E1",p:"3.1",h:2.54,n:105},{s:"O1E1",p:"3.2",h:2.54,n:105},{s:"O1E1",p:"3.3",h:2.63,n:110},{s:"O1E1",p:"3.4",h:2.62,n:110},{s:"O1E1",p:"3.5",h:1.80,n:75},{s:"O1E1",p:"3.6",h:1.78,n:75},{s:"O1E1",p:"3.7",h:1.39,n:65},
+  {s:"O1E1",p:"4.1",h:2.54,n:105},{s:"O1E1",p:"4.2",h:2.54,n:105},{s:"O1E1",p:"4.3",h:2.63,n:110},{s:"O1E1",p:"4.4",h:2.62,n:110},{s:"O1E1",p:"4.5",h:1.80,n:75},{s:"O1E1",p:"4.6",h:0.77,n:43},{s:"O1E1",p:"4.7",h:1.92,n:91},
+  {s:"O1E1",p:"5.1",h:1.33,n:66},{s:"O1E1",p:"5.2",h:0.55,n:24},{s:"O1E1",p:"5.3",h:0.87,n:40},{s:"O1E1",p:"5.4",h:1.79,n:110},{s:"O1E1",p:"5.5",h:2.54,n:105},{s:"O1E1",p:"5.6",h:2.54,n:105},
+  {s:"O1E2",p:"1.1",h:0.67,n:76},{s:"O1E2",p:"1.2",h:1.24,n:64},{s:"O1E2",p:"1.3",h:1.76,n:76},{s:"O1E2",p:"1.4",h:1.78,n:76},{s:"O1E2",p:"1.5",h:1.56,n:64},{s:"O1E2",p:"1.6",h:1.58,n:59},{s:"O1E2",p:"1.7",h:1.76,n:76},{s:"O1E2",p:"1.8",h:1.78,n:76},{s:"O1E2",p:"1.9",h:1.56,n:64},
+  {s:"O1E2",p:"2.1",h:1.58,n:64},{s:"O1E2",p:"2.2",h:1.76,n:76},{s:"O1E2",p:"2.3",h:1.78,n:76},{s:"O1E2",p:"2.4",h:1.53,n:64},{s:"O1E2",p:"2.5",h:1.58,n:64},{s:"O1E2",p:"2.6",h:1.76,n:76},{s:"O1E2",p:"2.7",h:1.78,n:75},{s:"O1E2",p:"2.8",h:1.56,n:64},
+  {s:"O1E2",p:"3.2",h:1.82,n:105},{s:"O1E2",p:"3.3",h:2.45,n:105},{s:"O1E2",p:"3.4",h:2.54,n:105},{s:"O1E2",p:"3.5",h:2.54,n:105},{s:"O1E2",p:"3.6",h:2.54,n:104},{s:"O1E2",p:"3.7",h:2.54,n:105},
+  {s:"O1E2",p:"4.1",h:1.76,n:76},{s:"O1E2",p:"4.2",h:1.74,n:72},{s:"O1E2",p:"4.3",h:1.75,n:72},{s:"O1E2",p:"4.4",h:1.78,n:76},{s:"O1E2",p:"4.5",h:1.76,n:76},{s:"O1E2",p:"4.6",h:1.77,n:72},{s:"O1E2",p:"4.7",h:1.76,n:72},{s:"O1E2",p:"4.8",h:1.76,n:76},
+  {s:"O1E2",p:"5.1",h:1.76,n:76},{s:"O1E2",p:"5.2",h:1.77,n:72},{s:"O1E2",p:"5.3",h:1.75,n:72},{s:"O1E2",p:"5.4",h:1.78,n:76},{s:"O1E2",p:"5.5",h:1.76,n:76},{s:"O1E2",p:"5.6",h:1.77,n:72},{s:"O1E2",p:"5.7",h:1.90,n:72},{s:"O1E2",p:"5.8",h:0.79,n:76},
+  {s:"O2E1",p:"1.1",h:2.59,n:107},{s:"O2E1",p:"1.2",h:2.59,n:108},{s:"O2E1",p:"1.3",h:2.59,n:108},{s:"O2E1",p:"1.4",h:2.57,n:107},{s:"O2E1",p:"1.5",h:2.59,n:107},{s:"O2E1",p:"1.6",h:2.59,n:108},
+  {s:"O2E1",p:"2.1",h:2.59,n:108},{s:"O2E1",p:"2.2",h:2.58,n:107},{s:"O2E1",p:"2.3",h:2.58,n:107},{s:"O2E1",p:"2.4",h:2.59,n:108},{s:"O2E1",p:"2.5",h:2.59,n:108},{s:"O2E1",p:"2.6",h:2.59,n:107},
+  {s:"O2E1",p:"3.1",h:2.59,n:108},{s:"O2E1",p:"3.2",h:2.59,n:107},{s:"O2E1",p:"3.3",h:2.58,n:107},{s:"O2E1",p:"3.4",h:2.59,n:108},{s:"O2E1",p:"3.5",h:2.59,n:108},{s:"O2E1",p:"3.6",h:2.59,n:107},
+  {s:"O2E1",p:"4.1",h:2.57,n:107},{s:"O2E1",p:"4.2",h:2.59,n:108},{s:"O2E1",p:"4.3",h:2.59,n:108},{s:"O2E1",p:"4.4",h:2.59,n:107},{s:"O2E1",p:"4.5",h:2.57,n:107},{s:"O2E1",p:"4.6",h:2.59,n:108},
+  {s:"O2E1",p:"5.1",h:2.59,n:107},{s:"O2E1",p:"5.2",h:2.59,n:108},{s:"O2E1",p:"5.3",h:2.54,n:108},{s:"O2E1",p:"5.4",h:2.57,n:107},{s:"O2E1",p:"5.5",h:1.75,n:107},{s:"O2E1",p:"5.6",h:0.27,n:108},
+  {s:"O2E2",p:"1.1",h:2.61,n:109},{s:"O2E2",p:"1.2",h:2.63,n:110},{s:"O2E2",p:"1.3",h:3.22,n:143},{s:"O2E2",p:"1.4",h:2.63,n:109},{s:"O2E2",p:"1.5",h:2.61,n:109},
+  {s:"O2E2",p:"2.1",h:2.78,n:122},{s:"O2E2",p:"2.2",h:2.39,n:108},{s:"O2E2",p:"2.3",h:2.63,n:109},{s:"O2E2",p:"2.4",h:2.62,n:109},{s:"O2E2",p:"2.5",h:2.08,n:90},{s:"O2E2",p:"2.6",h:2.16,n:95},
+  {s:"O2E2",p:"3.1",h:2.60,n:109},{s:"O2E2",p:"3.2",h:2.35,n:101},{s:"O2E2",p:"3.3",h:2.57,n:109},{s:"O2E2",p:"3.4",h:1.20,n:109},{s:"O2E2",p:"3.5",h:2.50,n:108},{s:"O2E2",p:"3.6",h:2.65,n:113},
+  {s:"O2E2",p:"4.1",h:0.96,n:48},{s:"O2E2",p:"4.2",h:1.19,n:48},{s:"O2E2",p:"4.3",h:2.79,n:121},{s:"O2E2",p:"4.4",h:2.94,n:127},{s:"O2E2",p:"4.5",h:1.14,n:48},{s:"O2E2",p:"4.7",h:2.63,n:112},{s:"O2E2",p:"4.8",h:0.49,n:132},
+  {s:"O2E2",p:"5.1",h:0.64,n:138},{s:"O2E2",p:"5.2",h:2.63,n:111},{s:"O2E2",p:"5.4",h:2.06,n:86},{s:"O2E2",p:"5.5",h:2.63,n:112},{s:"O2E2",p:"5.6",h:0.77,n:147},{s:"O2E2",p:"5.7",h:1.65,n:147},{s:"O2E2",p:"5.8",h:1.54,n:86},
+  {s:"O2E2",p:"6.7",h:2.39,n:106},{s:"O2E2",p:"6.9",h:2.20,n:101},
+  {s:"O3E1",p:"1.1",h:2.31,n:128},{s:"O3E1",p:"1.2",h:2.58,n:128},{s:"O3E1",p:"1.3",h:2.58,n:128},
+  {s:"O3E1",p:"2.1",h:2.20,n:129},{s:"O3E1",p:"2.2",h:2.41,n:129},
+  {s:"O3E1",p:"3.1",h:2.58,n:108},{s:"O3E1",p:"3.2",h:2.58,n:108},{s:"O3E1",p:"3.3",h:1.29,n:56},{s:"O3E1",p:"3.4",h:2.37,n:107},{s:"O3E1",p:"3.5",h:2.39,n:107},
+  {s:"O3E1",p:"4.1",h:1.29,n:108},{s:"O3E1",p:"4.2",h:2.58,n:108},{s:"O3E1",p:"4.3",h:2.58,n:108},{s:"O3E1",p:"4.4",h:2.37,n:107},{s:"O3E1",p:"4.5",h:2.30,n:107},
+  {s:"O3E1",p:"5.1a",h:1.84,n:87},{s:"O3E1",p:"5.1b",h:0.61,n:28},{s:"O3E1",p:"5.11",h:0.23,n:21},{s:"O3E1",p:"5.2",h:1.06,n:57},{s:"O3E1",p:"5.3",h:0.32,n:26},{s:"O3E1",p:"5.4",h:1.91,n:108},{s:"O3E1",p:"5.5",h:1.30,n:108},{s:"O3E1",p:"5.8",h:1.03,n:48},
+  {s:"O3E2",p:"1.1",h:2.62,n:109},{s:"O3E2",p:"1.2",h:2.60,n:110},
+  {s:"O3E2",p:"2.1",h:1.90,n:95},{s:"O3E2",p:"2.2",h:0.01,n:111},{s:"O3E2",p:"2.3",h:2.62,n:109},{s:"O3E2",p:"2.4",h:0.26,n:46},{s:"O3E2",p:"2.5",h:1.69,n:69},{s:"O3E2",p:"2.6",h:2.65,n:109},{s:"O3E2",p:"2.7",h:1.39,n:90},
+  {s:"O3E2",p:"3.1",h:1.47,n:68},{s:"O3E2",p:"3.12",h:0.89,n:95},{s:"O3E2",p:"3.2",h:0.86,n:48},{s:"O3E2",p:"3.9",h:1.19,n:85},
+];
+
+const FORMATOS_CONV = [
+  {nom:'150G BAJO PUNNET CONV-8ENVJCKBJABULK+12',peso:1.2},
+  {nom:'GRANEL VN 5KG CONV-BJACONVCREMA',peso:5.0},
+  {nom:'6OZ C/E CONV-24ENVW+12-LAV',peso:4.08},
+  {nom:'18OZ PLANO PUNNET CONV-6ENVJCK+12',peso:3.06},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENVEIBJABULK+12-LAV',peso:2.04},
+  {nom:'18OZ PLANO PUNNET CONV-6ENVJCK+14',peso:3.06},
+  {nom:'18OZ S/E RECTANGULAR CONV-9ENVEI+12',peso:4.59},
+  {nom:'PINTA LP C/E CONV-4ENVEIBJABULKX+12-LAVN',peso:1.25},
+  {nom:'PINTA LP C/E CONV-18ENVEI+12-LAVN',peso:5.62},
+  {nom:'PINTA LP C/E CONV-9ENVEI+12-LAVN',peso:2.81},
+  {nom:'GRANEL VN 3KG CONVBJABULKX+12',peso:3.0},
+  {nom:'GRANEL-CONVBJABULKX+12 (1KG)',peso:1.0},
+  {nom:'GRANEL-CONVBJABULKX+12',peso:3.0},
+  {nom:'BULK-CONVX+1218',peso:3.0},
+  {nom:'BULK-CONVX+12',peso:3.0},
+  {nom:'9.8OZ C/E CONV-4ENVEIBJABULK+19',peso:1.11},
+  {nom:'250G PUNNET SUR CONV-10ENV+12-DESPICHE',peso:2.5},
+  {nom:'PINTA LP PUNNET HS CONV-9ENVJCK+12',peso:2.81},
+  {nom:'300G PUNNET CONV-4ENVJCKBJABULK+12',peso:1.2},
+  {nom:'BULK-CONVW+14',peso:3.0},
+  {nom:'18OZ C/E PLANO CONV-2ENVWBJABULK+14-DESPICHE-LAVN',peso:1.02},
+  {nom:'9.8OZ C/E KR CONV-4ENVWBJABULK+19',peso:1.11},
+  {nom:'9.8OZ C/E KR CONV-18ENVW+19',peso:5.0},
+  {nom:'18OZ C/E PLANO CONV-2ENVWBJABULK+12-LAVN',peso:1.02},
+  {nom:'PINTA LP C/E CONV-4ENVEIBJABULK+12-LAV',peso:1.25},
+  {nom:'PINTA LP C/E CONV-4ENVEIBJABULK+12-DESPICHE-LAV',peso:1.25},
+  {nom:'PINTA LP C/E CONV-18ENVEI+12-LAV',peso:5.62},
+  {nom:'9.8OZ C/E CONV-18ENVEI+19',peso:5.0},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+14-LAVN',peso:3.06},
+  {nom:'PINTA LP C/E CONV-18ENVEI+12-DESPICHE-LAV',peso:5.62},
+  {nom:'9.8OZ C/E KR CONV-4ENVEIBJABULK+19',peso:1.11},
+  {nom:'250G PUNNET CONV H40 JCK-4ENVBJABULK+14-DESPICHE',peso:1.0},
+  {nom:'BULK-CONVW+1218',peso:3.0},
+  {nom:'PINTA LP C/E CONV-4ENVWBJABULK+12-DESPICHE-LAV',peso:1.25},
+  {nom:'9.8OZ C/E KR CONV-18ENVEI+19',peso:5.0},
+  {nom:'9.8OZ C/E KR CONV-9ENVEI+19',peso:2.5},
+  {nom:'GRANEL-CONVBJABULK+12 (1KG)',peso:1.0},
+  {nom:'18OZ C/E PLANO CONV-2ENVWBJABULK+12-DESPICHE-LAVN',peso:1.02},
+  {nom:'18OZ C/E PLANO CONV-2ENVWBJABULK+12-DESPICHE-LAV',peso:1.02},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+12-DESPICHE-LAVN',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+12-LAVN',peso:3.06},
+  {nom:'150G BAJO PUNNET CONV-26ENVJCK+14',peso:3.9},
+  {nom:'PINTA LP C/E CONV-4ENVWM6+12-LAV',peso:1.25},
+  {nom:'PINTA LP C/E CONV-18ENVW+12-LAV',peso:5.62},
+  {nom:'250G PUNNET CONV H40 JCK-10ENV+14-DESPICHE',peso:2.5},
+  {nom:'PINTA LP C/E CONV-4ENVWM6+12-DESPICHE-LAV',peso:1.25},
+  {nom:'PINTA LP C/E CONV-9ENVW+12-DESPICHE-LAV',peso:2.81},
+  {nom:'PINTA LP C/E CONV-4ENVEIM6+12-DESPICHE-LAV',peso:1.25},
+  {nom:'300G PUNNET CONV-9ENVJCK+12',peso:2.7},
+  {nom:'300G PUNNET CONV-9ENVJCK+12-DESPICHE',peso:2.7},
+  {nom:'250G PUNNET CONV H40 JCK-4ENVM6+14',peso:1.0},
+  {nom:'300G PUNNET CONV-4ENVJCKM6+12-DESPICHE',peso:1.2},
+  {nom:'250G PUNNET SUR CONV-10ENV+14-DESPICHE',peso:2.5},
+  {nom:'250G PUNNET SUR CONV-10ENV+14',peso:2.5},
+  {nom:'9.8OZ C/E CONV-9ENVEI+19',peso:2.5},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENVEI+12-LAV',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENVEI+12-DESPICHE-LAV',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENVEI+12-DESPICHE',peso:4.59},
+  {nom:'9.8OZ C/E KR CONV-9ENVW+19',peso:2.5},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENVEI+12',peso:4.59},
+  {nom:'PINTA LP C/E CONV-9ENVEI+12-DESPICHE-LAV',peso:2.81},
+  {nom:'PINTA LP C/E CONV-9ENVEI+12-LAV',peso:2.81},
+  {nom:'9.8OZ C/E KR CONV-4ENVWM6+19',peso:1.11},
+  {nom:'150G BAJO PUNNET CONV-13ENVJCK+14-DESPICHE',peso:1.95},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+12-DESPICHE-LAV',peso:3.06},
+  {nom:'9.8OZ C/E CONV-4ENVEIM6+19',peso:1.11},
+  {nom:'PINTA LP C/E CONV-9ENVEI+12-DESPICHE',peso:2.81},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+12-LAV',peso:3.06},
+  {nom:'PINTA LP C/E CONV-9ENVEI+12',peso:2.81},
+  {nom:'18OZ C/E PLANO CONV-6ENVEI+12-LAV',peso:3.06},
+  {nom:'150G BAJO PUNNET CONV-13ENVWN+14',peso:1.95},
+  {nom:'150G BAJO PUNNET CONV-13ENVJCK+14',peso:1.95},
+  {nom:'150G BAJO PUNNET CONV-13ENVW+14',peso:1.95},
+  {nom:'150G BAJO PUNNET CONV-8ENVWM6+14',peso:1.2},
+  {nom:'500G S/E RECTANGULAR CONV-4ENV+12',peso:2.0},
+  {nom:'300G S/E CONV-4ENVBJABULK+12',peso:1.2},
+  {nom:'DESCARTE CONV-BDJ GRANEL 50*30',peso:3.0},
+  {nom:'BULK 3.3-CONVW+12',peso:3.3},
+  {nom:'PINTA LP C/E CONV-4ENVWBJABULK+12-LAV',peso:1.25},
+  {nom:'PINTA LP C/E CONV-18ENVW+12-LAV',peso:5.62},
+  {nom:'PINTA LP C/E CONV-9ENVW+12-LAV',peso:2.81},
+  {nom:'18OZ S/E PLANO CONV-2ENVSMBJABULK+14',peso:1.02},
+  {nom:'18OZ S/E PLANO CONV-6ENVSM+14',peso:3.06},
+  {nom:'GRANEL VN 5KG CONV-BJA MARRON',peso:5.0},
+  {nom:'150G BAJO PUNNET CONV-13ENVJCK+12',peso:1.95},
+  {nom:'150G BAJO PUNNET CONV-26ENVJCK+12',peso:3.9},
+  {nom:'BARRIDO COMPOST CONV',peso:5.0},
+  {nom:'BARRIDO 5KG COMPOST CONV',peso:5.0},
+  {nom:'BARRIDO 5KG VN BJACONV',peso:5.0},
+  {nom:'18OZ S/E PLANO CONV-2ENVSMBJABULK+12',peso:1.02},
+  {nom:'18OZ S/E PLANO CONV-6ENVSM+12',peso:3.06},
+  {nom:'6OZ C/E CONV-8ENVWBJABULK+12-LAV',peso:1.36},
+  {nom:'6OZ C/E CONV-12ENVW+12-LAV',peso:2.04},
+  {nom:'300G PUNNET CONV-4ENVBJABULK+12',peso:1.2},
+  {nom:'250G PUNNET CONV H40 JCK-4ENVBJABULK+12',peso:1.0},
+  {nom:'18OZ C/E PLANO CONV-2ENVEBJABULK+12-LAV',peso:1.02},
+  {nom:'18OZ C/E PLANO CONV-2ENVEBJABULK+12',peso:1.02},
+  {nom:'BARRIDO 5KG VN',peso:5.0},
+  {nom:'18OZ S/E PLANO CONV-2ENVEBJABULK+12',peso:1.02},
+  {nom:'PINTA LP C/E CONV-4ENVBJABULK+12-LAV',peso:1.25},
+  {nom:'BARRIDO CONV 5KG BJATERCERO SUNSHINE',peso:5.0},
+  {nom:'GRANEL-CONVBJABULK+12',peso:3.0},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENVBJABULK+12-LAV',peso:2.04},
+  {nom:'18OZ PLANO PUNNET CONV-2ENVBJABULK+12',peso:1.02},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENVBJABULK+12 CANADA-LAV',peso:2.04},
+  {nom:'GRANEL VN 5KG CONV-BJATERCERO SUNSHINE',peso:5.0},
+  {nom:'250G PUNNET SUR CONV-10ENV+12',peso:2.5},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENVM6+12-LAV',peso:2.04},
+  {nom:'18OZ PLANO PUNNET CONV-2ENVM6+12 CANADA',peso:1.02},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENV+12 CANADA-LAV',peso:2.04},
+  {nom:'GRANEL VN 3KG CONVBJABULK+12',peso:3.0},
+  {nom:'18OZ PLANO PUNNET CONV-6ENV+12 CANADA',peso:3.06},
+  {nom:'18OZ S/E RECTANGULAR CONV-9ENV+12 CANADA',peso:4.59},
+  {nom:'PINTA LP C/E CONV-18ENV+12 CANADA-LAV',peso:5.62},
+  {nom:'PINTA LP C/E CONV-9ENV+12 CANADA-LAV',peso:2.81},
+  {nom:'PINTA LP C/E CONV-4ENVM6+12 CANADA-LAV',peso:1.25},
+  {nom:'PINTA LP C/E CONV-18ENV+12-LAV',peso:5.62},
+  {nom:'PINTA LP C/E CONV-9ENV+12-LAV',peso:2.81},
+  {nom:'PINTA LP C/E CONV-4ENVM6+12-LAV',peso:1.25},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+12 CANADA-LAV',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+12-LAV',peso:4.59},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+12 CANADA-LAV',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+12-LAV',peso:3.06},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENVM6+12-DESPICHE',peso:2.04},
+  {nom:'150G BAJO PUNNET CONV-13ENVW+12',peso:1.95},
+  {nom:'BULK-CONVW+12 CANADA',peso:3.0},
+  {nom:'150G BAJO PUNNET CONV-26ENVW+12',peso:3.9},
+  {nom:'GRANEL-CONVM6+12 (1KG) CANADA',peso:1.0},
+  {nom:'GRANEL-CONVM6+12 CANADA',peso:3.0},
+  {nom:'PINTA LP C/E CONV-18ENV+12 CANADA',peso:5.62},
+  {nom:'PINTA LP C/E CONV-9ENV+12 CANADA',peso:2.81},
+  {nom:'6OZ C/E CONV-24ENVW+12 CANADA',peso:4.08},
+  {nom:'6OZ C/E CONV-12ENVW+12 CANADA',peso:2.04},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+12 CANADA',peso:4.59},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+12 CANADA',peso:3.06},
+  {nom:'9.8OZ C/E FJ CONV-9ENVEI+19',peso:2.5},
+  {nom:'18OZ C/E PLANO CONV-2ENVEM6+12-DESPICHE',peso:1.02},
+  {nom:'9.8OZ C/E FJ CONV-18ENVEI+19',peso:5.0},
+  {nom:'PINTA LP C/E CONV-9ENV+12-DESPICHE',peso:2.81},
+  {nom:'150G BAJO PUNNET CONV-26ENVW+14',peso:3.9},
+  {nom:'PINTA LP C/E CONV-4ENVM6+12-DESPICHE',peso:1.25},
+  {nom:'18OZ C/E PLANO CONV-2ENVEM6+14-DESPICHE',peso:1.02},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+14-DESPICHE',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+14',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+12-DESPICHE',peso:3.06},
+  {nom:'PINTA LP S/E CONV-9ENVW+12-DESPICHE',peso:2.81},
+  {nom:'PINTA LP S/E CONV-9ENV+12-DESPICHE',peso:2.81},
+  {nom:'PINTA LP S/E CONV-9ENV+12',peso:2.81},
+  {nom:'PINTA LP S/E CONV-18ENVW+12-DESPICHE',peso:5.62},
+  {nom:'PINTA LP S/E CONV-18ENVW+12',peso:5.62},
+  {nom:'PINTA LP S/E CONV-18ENV+12-DESPICHE',peso:5.62},
+  {nom:'PINTA LP S/E CONV-18ENV+12',peso:5.62},
+  {nom:'PINTA LP PUNNET HS CONV-9ENV+12-DESPICHE',peso:2.81},
+  {nom:'PINTA LP PUNNET HS CONV-9ENV+12',peso:2.81},
+  {nom:'PINTA LP PUNNET HS CONV-4ENVM6+12-DESPICHE',peso:1.25},
+  {nom:'PINTA LP PUNNET HS CONV-4ENVM6+12',peso:1.25},
+  {nom:'PINTA LP PUNNET CONV-9ENV+12',peso:2.81},
+  {nom:'PINTA LP C/E CONV-9ENVW+12',peso:2.81},
+  {nom:'PINTA LP C/E CONV-9ENV+12-DESPICHE',peso:2.81},
+  {nom:'PINTA LP C/E CONV-9ENV+12',peso:2.81},
+  {nom:'PINTA LP C/E CONV-4ENVWM6+12',peso:1.25},
+  {nom:'PINTA LP C/E CONV-4ENVM6+12',peso:1.25},
+  {nom:'PINTA LP C/E CONV-18ENVW+12',peso:5.62},
+  {nom:'PINTA LP C/E CONV-18ENV+12-DESPICHE',peso:5.62},
+  {nom:'PINTA LP C/E CONV-18ENV+12',peso:5.62},
+  {nom:'PINTA C/E HEB CONV-12ENV+12',peso:3.74},
+  {nom:'GRANEL-CONVM6+12-DESPICHE',peso:3.0},
+  {nom:'GRANEL-CONVM6+12 (1KG)',peso:1.0},
+  {nom:'GRANEL-CONVM6+12',peso:3.0},
+  {nom:'GRANEL VN 3KG CONVM6+12',peso:3.0},
+  {nom:'GRANEL VN 3.5 CONVM6+12',peso:3.5},
+  {nom:'GRANEL 3.3-CONVM6+12',peso:3.3},
+  {nom:'DESCARTE_CONV',peso:5.0},
+  {nom:'BULK-CONVW+12-DESPICHE',peso:3.0},
+  {nom:'BULK-CONVW+12',peso:3.0},
+  {nom:'BULK-CONVMP+12',peso:3.0},
+  {nom:'BULK-CONVM6+14',peso:3.0},
+  {nom:'BULK-CONVM6+12',peso:3.0},
+  {nom:'BULK BJABAJA-CONV+12',peso:3.0},
+  {nom:'BULK 3.3-CONVM6+12',peso:3.3},
+  {nom:'BARRIDO CONV',peso:5.0},
+  {nom:'BARRIDO 3KG CONVM6',peso:3.0},
+  {nom:'9.8OZ C/E KR CONV-9ENV+19',peso:2.5},
+  {nom:'9.8OZ C/E KR CONV-4ENVM6+19',peso:1.11},
+  {nom:'9.8OZ C/E KR CONV-18ENV+19',peso:5.0},
+  {nom:'9.8OZ C/E FB CONV-9ENV+19',peso:2.5},
+  {nom:'9.8OZ C/E FB CONV-4ENVM6+19',peso:1.11},
+  {nom:'9.8OZ C/E FB CONV-18ENV+19',peso:5.0},
+  {nom:'9.8OZ C/E CONV-9ENVW+19',peso:2.5},
+  {nom:'9.8OZ C/E CONV-9ENV+19',peso:2.5},
+  {nom:'9.8OZ C/E CONV-4ENVWM6+19',peso:1.11},
+  {nom:'9.8OZ C/E CONV-4ENVM6+19',peso:1.11},
+  {nom:'9.8OZ C/E CONV-18ENVW+19',peso:5.0},
+  {nom:'9.8OZ C/E CONV-18ENV+19',peso:5.0},
+  {nom:'6OZ C/E CONV-8ENVWM6+12',peso:1.36},
+  {nom:'6OZ C/E CONV-24ENVW+16',peso:4.08},
+  {nom:'6OZ C/E CONV-24ENVW+12',peso:4.08},
+  {nom:'6OZ C/E CONV-12ENVW+12',peso:2.04},
+  {nom:'4OZ S/E CONV-30ENVW+18',peso:3.75},
+  {nom:'4OZ S/E CONV-30ENVW+16',peso:3.75},
+  {nom:'4OZ S/E CONV-30ENVW+14',peso:3.75},
+  {nom:'4OZ S/E CONV-30ENVW+12',peso:3.75},
+  {nom:'4OZ S/E CONV-15ENVW+18',peso:1.88},
+  {nom:'4OZ S/E CONV-15ENVW+14',peso:1.88},
+  {nom:'4OZ S/E CONV-15ENVW+12',peso:1.88},
+  {nom:'4OZ C/E VI CONV-30ENVW+12',peso:3.75},
+  {nom:'4OZ C/E VI CONV-15ENVW+12',peso:1.88},
+  {nom:'4OZ C/E SS CONV-30ENVW+16',peso:3.75},
+  {nom:'4OZ C/E SS CONV-30ENVW+14',peso:3.75},
+  {nom:'4OZ C/E SS CONV-30ENVW+12',peso:3.75},
+  {nom:'4OZ C/E SS CONV-15ENVW+12',peso:1.88},
+  {nom:'4OZ C/E JV CONV-15ENVW+14',peso:1.88},
+  {nom:'4OZ C/E JR CONV-15ENVW+12',peso:1.88},
+  {nom:'4OZ C/E HF CONV-15ENVW+14',peso:1.88},
+  {nom:'300G S/E CONV-9ENV+12',peso:2.7},
+  {nom:'300G PUNNET CONV-9ENV+14',peso:2.7},
+  {nom:'300G PUNNET CONV-9ENV+12-DESPICHE',peso:2.7},
+  {nom:'300G PUNNET CONV-9ENV+12',peso:2.7},
+  {nom:'300G C/E SPAR CONV-9ENVW+20',peso:2.7},
+  {nom:'300G C/E SPAR CONV-9ENVW+12',peso:2.7},
+  {nom:'250G PUNNET CONV-10ENV+20',peso:2.5},
+  {nom:'250G PUNNET CONV-10ENV+12',peso:2.5},
+  {nom:'250G PUNNET CONV H40 JCK-10ENV+14',peso:2.5},
+  {nom:'250G PUNNET CONV H40 JCK-10ENV+12-DESPICHE',peso:2.5},
+  {nom:'250G PUNNET CONV H40 JCK-10ENV+12',peso:2.5},
+  {nom:'18OZ S/E RECTANGULAR CONV-9ENV+14',peso:4.59},
+  {nom:'18OZ S/E RECTANGULAR CONV-9ENV+12-DESPICHE',peso:4.59},
+  {nom:'18OZ S/E RECTANGULAR CONV-9ENV+12',peso:4.59},
+  {nom:'18OZ S/E PLANO CONV-6ENVW+12',peso:3.06},
+  {nom:'18OZ S/E PLANO CONV-6ENVE+12-DESPICHE',peso:3.06},
+  {nom:'18OZ S/E PLANO CONV-6ENVE+12',peso:3.06},
+  {nom:'18OZ S/E PLANO CONV-2ENVEM6+12',peso:1.02},
+  {nom:'18OZ PLANO PUNNET CONV-6ENV+14',peso:3.06},
+  {nom:'18OZ PLANO PUNNET CONV-6ENV+12-DESPICHE',peso:3.06},
+  {nom:'18OZ PLANO PUNNET CONV-6ENV+12',peso:3.06},
+  {nom:'18OZ PLANO PUNNET CONV-2ENVM6+14',peso:1.02},
+  {nom:'18OZ PLANO PUNNET CONV-2ENVM6+12',peso:1.02},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+20',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+14',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+12-DESPICHE',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-9ENV+12',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR CONV-4ENVM6+12',peso:2.04},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+14',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENVW+12',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENVE+12',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENV+20',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENV+19',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-6ENV+12',peso:3.06},
+  {nom:'18OZ C/E PLANO CONV-2ENVW+12',peso:1.02},
+  {nom:'18OZ C/E PLANO CONV-2ENVEM6+12',peso:1.02},
+  {nom:'18OZ C/E PLANO CONV-12ENVW+12',peso:6.12},
+  {nom:'18OZ C/E PLANO CONV-12ENV+19',peso:6.12},
+  {nom:'18OZ C/E PLANO CONV-12ENV+12',peso:6.12},
+  {nom:'150G TESC PUNNET CONV-28ENV+12',peso:4.2},
+  {nom:'150G TESC PUNNET CONV-14ENV+12',peso:2.1},
+  {nom:'150G PUNNET CONV-8ENVWM6+12',peso:1.2},
+  {nom:'150G PUNNET CONV-28ENVW+12-DESPICHE',peso:4.2},
+  {nom:'150G PUNNET CONV-28ENVW+12',peso:4.2},
+  {nom:'150G PUNNET CONV-14ENVW+14',peso:2.1},
+  {nom:'150G PUNNET CONV-14ENVW+12',peso:2.1},
+  {nom:'11OZ S/E CONV-9ENVW+14',peso:2.81},
+  {nom:'11OZ S/E CONV-9ENVW+12',peso:2.81},
+  {nom:'11OZ C/E CONV-9ENV+12',peso:2.81},
+  {nom:'11OZ C/E CONV-4ENVM6+12-DESPICHE',peso:1.25},
+  {nom:'11OZ C/E CONV-4ENVM6+12',peso:1.25},
+  {nom:'11OZ C/E CONV-18ENV+12',peso:5.62},
+  {nom:'18OZ PLANO PUNNET CONV-6ENV+16',peso:3.06}
+];
+
+const FORMATOS_ORG = [
+  {nom:'18OZ C/E PLANO PUNNET HS ORG-6ENVJCK+12',peso:3.06},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-4ENVEPBJAGRAORG+12',peso:2.04},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-4ENVEIBJAGRAORG+12',peso:2.04},
+  {nom:'6OZ C/E KR ORG-8ENVWBJAGRAORG+12',peso:1.36},
+  {nom:'6OZ S/E ORG-24ENVW+12',peso:4.08},
+  {nom:'6OZ S/E ORG-12ENVW+12',peso:2.04},
+  {nom:'PINTA LP C/E ORG-4ENVEIBJAGRAORG+12',peso:1.25},
+  {nom:'4OZ C/E SPAR CAR ORG-8ENVBJAGRAORG+12',peso:1.0},
+  {nom:'18OZ C/E RECTANGULAR ORG-4ENVEPBJAGRAORG+12',peso:2.04},
+  {nom:'125G BAJO PUNNET ORG-13ENVJCK+12',peso:1.63},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-4ENVEIBJAGRAORG+12-LAV',peso:2.04},
+  {nom:'18OZ C/E PLANO ORG-6ENVEI+12',peso:3.06},
+  {nom:'18OZ S/E RECTANGULAR ORG-4ENVBJABULKX+12',peso:2.04},
+  {nom:'BULK-ORGX+12',peso:3.0},
+  {nom:'18OZ C/E RECTANGULAR ORG-9ENVEP+12',peso:4.59},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-9ENVEI+12-LAV',peso:4.59},
+  {nom:'18OZ C/E PLANO ORG-6ENVEI+12-LAV',peso:3.06},
+  {nom:'PINTA LP C/E ORG-18ENVEI+12',peso:5.62},
+  {nom:'PINTA LP PUNNET ORG-9ENVJCK+12',peso:2.81},
+  {nom:'4OZ C/E SPAR CAR ORG-13ENV+12',peso:1.63},
+  {nom:'125G BAJO PUNNET ORG-26ENVJCK+12',peso:3.25},
+  {nom:'150G BAJO PUNNET ORG-26ENVJCK+12',peso:3.9},
+  {nom:'6OZ C/E KR ORG-12ENVEP+12',peso:2.04},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-9ENVEI+12',peso:4.59},
+  {nom:'PINTA LP C/E ORG-9ENVEI+12',peso:2.81},
+  {nom:'BULK 3.3-ORGWBAJA+12',peso:3.3},
+  {nom:'125G BAJO PUNNET ORG-8ENVJCKBJGRA+12',peso:1.0},
+  {nom:'150G BAJO PUNNET ORG-8ENVJCKBJGRA+12',peso:1.2},
+  {nom:'125G PUNNET S/E ORG - 8ENVBJGRA +12',peso:1.0},
+  {nom:'150G BAJO PUNNET ORG-8ENVWBJGRA+12',peso:1.2},
+  {nom:'125G PUNNET ORG-8ENVBJGRA+12',peso:1.0},
+  {nom:'BULK-ORGWBAJA+12',peso:3.0},
+  {nom:'150G BAJO PUNNET ORG-26ENVW+12',peso:3.9},
+  {nom:'150G BAJO PUNNET ORG-13ENVW+12',peso:1.95},
+  {nom:'125G BAJO PUNNET ORG-14ENVW+12',peso:1.75},
+  {nom:'6OZ C/E KR ORG-12ENVW+12',peso:2.04},
+  {nom:'6OZ C/E KR ORG-24ENVW+12',peso:4.08},
+  {nom:'18OZ S/E PLANO ORG-4ENVE+12-MUESTRA',peso:2.04},
+  {nom:'PINTA LP S/E ORG-9ENV+12',peso:2.81},
+  {nom:'PINTA LP S/E ORG-4ENV+12',peso:1.25},
+  {nom:'PINTA LP S/E ORG-18ENV+12',peso:5.62},
+  {nom:'PINTA LP PUNNET ORG-9ENV+12',peso:2.81},
+  {nom:'PINTA LP C/E ORG-9ENV+12',peso:2.81},
+  {nom:'PINTA LP C/E ORG-4ENV+12',peso:1.25},
+  {nom:'PINTA LP C/E ORG-18ENV+12',peso:5.62},
+  {nom:'GRANEL-ORGW+12 (1KG)',peso:1.0},
+  {nom:'GRANEL-ORGW+12',peso:3.0},
+  {nom:'GRANEL VN 3KG ORGW+12',peso:3.0},
+  {nom:'GRANEL VN 3.5 ORGW+12',peso:3.5},
+  {nom:'DESCARTE_ORG',peso:5.0},
+  {nom:'BULK-ORGW+12',peso:3.0},
+  {nom:'BULK 3.3-ORGW+12',peso:3.3},
+  {nom:'BARRIDO ORG',peso:5.0},
+  {nom:'BARRIDO COMPOST ORG',peso:5.0},
+  {nom:'BARRIDO 3KG ORG',peso:3.0},
+  {nom:'9.8OZ C/E LL ORG-9ENV+12',peso:2.5},
+  {nom:'6OZ S/E ORG-12ENV+12',peso:2.04},
+  {nom:'6OZ C/E ORG-8ENV+12',peso:1.36},
+  {nom:'6OZ C/E ORG-24ENVW+12',peso:4.08},
+  {nom:'6OZ C/E ORG-24ENVPM+12',peso:4.08},
+  {nom:'6OZ C/E ORG-24ENVEP+12',peso:4.08},
+  {nom:'6OZ C/E ORG-12ENVW+12',peso:2.04},
+  {nom:'6OZ C/E ORG-12ENVEP+12',peso:2.04},
+  {nom:'6OZ C/E ORG-12ENV+12',peso:2.04},
+  {nom:'6OZ C/E KR ORG-24ENV+12',peso:4.08},
+  {nom:'6OZ C/E KR ORG-12ENV+12',peso:2.04},
+  {nom:'4OZ S/E ORG-30ENVW+12',peso:3.75},
+  {nom:'4OZ S/E ORG-15ENVW+12',peso:1.88},
+  {nom:'4OZ C/E SPAR ORG-30ENV+12',peso:3.75},
+  {nom:'4OZ C/E SPAR ORG-15ENV+12',peso:1.88},
+  {nom:'18OZ S/E RECTANGULAR ORG-9ENV+12',peso:4.59},
+  {nom:'18OZ S/E PLANO ORG-6ENVW+12',peso:3.06},
+  {nom:'18OZ PLANO PUNNET ORG-6ENV+12',peso:3.06},
+  {nom:'18OZ C/E RECTANGULAR ORG-9ENV+12',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR ORG-4ENV+12',peso:2.04},
+  {nom:'18OZ C/E RECTANGULAR COSTCO ORG-9ENV+14',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR COSTCO ORG-9ENV+12',peso:4.59},
+  {nom:'18OZ C/E RECTANGULAR COSTCO ORG-4ENV+12',peso:2.04},
+  {nom:'18OZ C/E RECTANGULAR COSTCO ORG-2ENV+12',peso:1.02},
+  {nom:'18OZ C/E PLANO ORG-6ENVW+12',peso:3.06},
+  {nom:'18OZ C/E PLANO ORG-6ENVE+12',peso:3.06},
+  {nom:'18OZ C/E PLANO ORG-6ENV+12',peso:3.06},
+  {nom:'18OZ C/E PLANO ORG-2ENVE+12',peso:1.02},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-9ENV+12',peso:4.59},
+  {nom:'18OZ C/E KR RECTANGULAR ORG-4ENV+12',peso:2.04},
+  {nom:'150G TESC PUNNET ORG-28ENV+12',peso:4.2},
+  {nom:'150G TESC PUNNET ORG-14ENV+12',peso:2.1},
+  {nom:'150G PUNNET ORG-28ENVW+12',peso:4.2},
+  {nom:'150G PUNNET ORG-14ENVW+12',peso:2.1},
+  {nom:'150G BAJO PUNNET ORG-13ENV+20',peso:1.95},
+  {nom:'150G BAJO PUNNET ORG-13ENV+12',peso:1.95},
+  {nom:'125G PUNNET ORG-13ENV+12',peso:1.63},
+  {nom:'125G BAJO PUNNET ORG-28ENVW+12',peso:3.5}
+];
+
+const FORMATOS = FORMATOS_CONV; // default, se actualiza según manejo
+
+// ═══════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════
+const ETQ = {'10:30':'10:30 am','12:00':'12:00 pm','15:30':'3:30 pm'};
+let jcH = '', supH = '', jcFmts = [], supCtx = {};
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function init() {
+  document.getElementById('fecha-hoy').textContent =
+    new Date().toLocaleDateString('es-PE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+
+  ['jc-ciclo','sup-ciclo'].forEach(id => {
+    const s = document.getElementById(id);
+    CICLOS.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; s.appendChild(o); });
+  });
+  const ss = document.getElementById('jc-sector');
+  SECTORES.forEach(sec => { const o = document.createElement('option'); o.value = sec; o.textContent = sec; ss.appendChild(o); });
+
+  buildCuadGrid();
+  buildPinGrid();
+  buildJcCosechaPinGrid();
+  const jccCicloSel = document.getElementById('jcc-ciclo-sel');
+  if (jccCicloSel) CICLOS.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; jccCicloSel.appendChild(o); });
+  checkStorage();
+  document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) cerrarDD(); });
+}
+
+async function checkStorage() {
+  const el = document.getElementById('status-bar');
+  try {
+    await window.storage.set('_ping', '1', true);
+    const r = await window.storage.get('_ping', true);
+    if (r && r.value) {
+      el.className = 'status ok';
+      el.textContent = '✓ Almacenamiento en tiempo real activo';
+    } else throw new Error();
+  } catch(e) {
+    el.className = 'status warn';
+    el.textContent = '⚠ Modo local — datos solo en este dispositivo';
+  }
+}
+
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function selH(btn, rol) {
+  const cls = rol === 'jc' ? '[data-h].hora-btn' : '[data-h].hora-btn';
+  const parent = btn.closest('.hora-group');
+  parent.querySelectorAll('.hora-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (rol === 'jc') jcH = btn.dataset.h; else supH = btn.dataset.h;
+}
+
+// ═══════════════════════════════════════
+// JC
+// ═══════════════════════════════════════
+function irFormJC() {
+  const nom = document.getElementById('jc-nombre').value.trim();
+  const nc = document.getElementById('jc-ncuad').value.trim();
+  const ciclo = document.getElementById('jc-ciclo').value;
+  if (!nom) { alert('Ingresa tu nombre'); return; }
+  if (!nc) { alert('Ingresa el número de cuadrilla'); return; }
+  if (!ciclo) { alert('Selecciona el ciclo'); return; }
+  if (!jcH) { alert('Selecciona el horario'); return; }
+
+  document.getElementById('jc-form-title').textContent = `Cuadrilla ${nc}`;
+  document.getElementById('jc-lbl-cuad').textContent = `Cuadrilla ${nc}`;
+  document.getElementById('jc-lbl-ciclo').textContent = ciclo;
+  document.getElementById('jc-badge').textContent = ETQ[jcH];
+  document.getElementById('jc-kg-sec').style.display = jcH !== '10:30' ? 'block' : 'none';
+
+  document.getElementById('jc-sector').value = '';
+  document.getElementById('jc-parcela').innerHTML = '<option value="">Seleccionar parcela...</option>';
+  document.getElementById('jc-factor-box').style.display = 'none';
+  document.getElementById('jc-has-calc').textContent = '—';
+  ['jc-hileras','jc-jornales'].forEach(id => document.getElementById(id).value = '');
+  jcFmts = []; jcManejo = '';
+  document.querySelectorAll('.btn-manejo').forEach(b => b.classList.remove('active'));
+  renderFmts();
+  goTo('s-jc-form');
+}
+
+function jcUpdParc() {
+  const sec = document.getElementById('jc-sector').value;
+  const sp = document.getElementById('jc-parcela');
+  sp.innerHTML = '<option value="">Seleccionar parcela...</option>';
+  document.getElementById('jc-factor-box').style.display = 'none';
+  if (!sec) return;
+  PARCELAS.filter(p => p.s === sec).forEach(p => {
+    const o = document.createElement('option');
+    o.value = `${p.s}|${p.p}`;
+    o.textContent = `Parcela ${p.p}  ·  ${p.h} has  /  ${p.n} hil.`;
+    sp.appendChild(o);
+  });
+}
+
+function jcGetP() {
+  const v = document.getElementById('jc-parcela').value;
+  if (!v) return null;
+  const [s, p] = v.split('|');
+  return PARCELAS.find(x => x.s === s && x.p === p);
+}
+
+function jcUpdFactor() {
+  const p = jcGetP();
+  if (p) {
+    document.getElementById('jc-factor').textContent = (p.h / p.n).toFixed(4);
+    document.getElementById('jc-hiltot').textContent = p.n;
+    document.getElementById('jc-factor-box').style.display = 'block';
+  } else {
+    document.getElementById('jc-factor-box').style.display = 'none';
+  }
+  jcCalc();
+}
+
+function jcCalc() {
+  const p = jcGetP();
+  const l = parseFloat(document.getElementById('jc-hileras').value);
+  document.getElementById('jc-has-calc').textContent =
+    (p && !isNaN(l) && l >= 0) ? ((p.h / p.n) * l).toFixed(2) + ' has' : '—';
+}
+
+// Formatos
+
+let jcManejo = ''; // 'CONV' o 'ORG'
+
+function selManejo(btn) {
+  document.querySelectorAll('.btn-manejo').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  jcManejo = btn.dataset.m;
+  // limpiar formatos seleccionados si cambia el manejo
+  jcFmts = [];
+  renderFmts();
+  document.getElementById('jc-search').value = '';
+  cerrarDD();
+}
+
+function buscar() {
+  const q = document.getElementById('jc-search').value.trim().toLowerCase();
+  const dd = document.getElementById('jc-dd');
+  if (!jcManejo) { dd.style.display = 'none'; document.getElementById('jc-search').placeholder = 'Selecciona el manejo primero'; return; }
+  if (q.length < 2) { dd.style.display = 'none'; return; }
+  const lista = jcManejo === 'CONV' ? FORMATOS_CONV : FORMATOS_ORG;
+  const usados = new Set(jcFmts.map(f => f.nom));
+  const res = lista.filter(f => !usados.has(f.nom) && f.nom.toLowerCase().includes(q)).slice(0, 10);
+  if (!res.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = '';
+  res.forEach(f => {
+    const d = document.createElement('div');
+    d.className = 'dd-item';
+    d.innerHTML = `<span class="dd-nom">${f.nom}</span><span class="dd-peso">${f.peso} kg</span>`;
+    d.onclick = () => addFmt(f);
+    dd.appendChild(d);
+  });
+  dd.style.display = 'block';
+}
+
+function cerrarDD() { document.getElementById('jc-dd').style.display = 'none'; }
+
+function addFmt(f) {
+  if (jcFmts.length >= 4) { alert('Máximo 4 formatos'); return; }
+  jcFmts.push({ ...f, bandejas: 0 });
+  document.getElementById('jc-search').value = '';
+  cerrarDD();
+  renderFmts();
+}
+
+function renderFmts() {
+  const cont = document.getElementById('jc-fmt-list');
+  cont.innerHTML = '';
+  jcFmts.forEach((f, i) => {
+    const d = document.createElement('div');
+    d.className = 'fmt-card';
+    d.innerHTML = `
+      <div class="fmt-name">${f.nom}</div>
+      <div class="fmt-row">
+        <span class="fmt-peso">${f.peso} kg/bdj</span>
+        <input type="number" min="0" placeholder="Bandejas" value="${f.bandejas || ''}" oninput="updBdj(${i},this.value)">
+        <span id="fkg-${i}" class="fmt-kg">${f.bandejas ? (f.bandejas * f.peso).toFixed(2) + ' kg' : '—'}</span>
+        <button class="btn-icon" onclick="rmFmt(${i})">✕</button>
+      </div>`;
+    cont.appendChild(d);
+  });
+  const btn = document.getElementById('jc-btn-add');
+  const sw = document.getElementById('jc-search-sec');
+  if (jcFmts.length >= 4) { btn.style.display = 'none'; sw.style.display = 'none'; }
+  else { btn.style.display = 'flex'; sw.style.display = 'none'; }
+  updTotalKg();
+}
+
+function updBdj(i, v) {
+  jcFmts[i].bandejas = parseFloat(v) || 0;
+  const el = document.getElementById(`fkg-${i}`);
+  if (el) el.textContent = jcFmts[i].bandejas ? (jcFmts[i].bandejas * jcFmts[i].peso).toFixed(2) + ' kg' : '—';
+  updTotalKg();
+}
+
+function rmFmt(i) { jcFmts.splice(i, 1); renderFmts(); }
+
+function updTotalKg() {
+  const t = jcFmts.reduce((s, f) => s + f.bandejas * f.peso, 0);
+  document.getElementById('jc-kg-total').textContent = t > 0 ? t.toFixed(2) + ' kg' : '0.00 kg';
+}
+
+function mostrarSearch() {
+  document.getElementById('jc-search-sec').style.display = 'block';
+  document.getElementById('jc-btn-add').style.display = 'none';
+  document.getElementById('jc-search').focus();
+}
+
+async function jcGuardar() {
+  const nom = document.getElementById('jc-nombre').value.trim();
+  const nc = document.getElementById('jc-ncuad').value.trim();
+  const ciclo = document.getElementById('jc-ciclo').value;
+  const p = jcGetP();
+  const hil = parseFloat(document.getElementById('jc-hileras').value);
+  const jorn = parseInt(document.getElementById('jc-jornales').value);
+  if (!p || isNaN(hil) || isNaN(jorn)) { alert('Completa todos los campos obligatorios'); return; }
+  const has = parseFloat(((p.h / p.n) * hil).toFixed(2));
+  const esKg = jcH !== '10:30';
+  if (esKg && jcFmts.length === 0) { alert('Agrega al menos un formato'); return; }
+  const totalKg = esKg ? parseFloat(jcFmts.reduce((s, f) => s + f.bandejas * f.peso, 0).toFixed(2)) : null;
+
+  const obj = {
+    jc: nom, ncuad: nc, ciclo, horario: jcH, manejo: jcManejo,
+    sector: p.s, parcela: p.p, has, lineas: hil, hileras_total: p.n, jornales: jorn,
+    formatos: esKg ? jcFmts.map(f => ({ nom: f.nom, peso: f.peso, bandejas: f.bandejas, kg: parseFloat((f.bandejas * f.peso).toFixed(2)) })) : null,
+    totalKg, ts: Date.now()
+  };
+
+  const key = `${ciclo}__${jcH}__${nc}`;
+  try {
+    await window._fb.setDoc(window._fb.doc(window._db, 'reportes', key), obj);
+  } catch(e) {
+    // fallback offline
+    try { localStorage.setItem('rpt__' + key, JSON.stringify(obj)); } catch(e2) {}
+    console.warn('Guardado localmente:', e.message);
+  }
+
+  // pantalla confirmación
+  let html = `
+    <div class="data-row"><span class="dl">Cuadrilla</span><span class="dv">${nc}</span></div>
+    <div class="data-row"><span class="dl">Ciclo</span><span class="dv">${ciclo}</span></div>
+    <div class="data-row"><span class="dl">Horario</span><span class="dv">${ETQ[jcH]}</span></div>
+    <div class="data-row"><span class="dl">Manejo</span><span class="dv">${jcManejo === 'CONV' ? 'Convencional' : 'Orgánico'}</span></div>
+    <div class="data-row"><span class="dl">Sector / Parcela</span><span class="dv">${p.s} · P${p.p}</span></div>
+    <div class="data-row"><span class="dl">Has recorridas</span><span class="dv">${has} has</span></div>
+    <div class="data-row"><span class="dl">Jornales</span><span class="dv">${jorn}</span></div>`;
+  if (esKg) {
+    obj.formatos.forEach(f => { html += `<div class="data-row"><span class="dl" style="font-size:11px;">${f.nom.substring(0,32)}…</span><span class="dv">${f.bandejas} bdj · ${f.kg} kg</span></div>`; });
+    html += `<div class="data-row"><span class="dl" style="font-weight:600;">Total kg</span><span class="dv" style="color:var(--accent);font-weight:700;">${totalKg} kg</span></div>`;
+  }
+  document.getElementById('ok-card').innerHTML = html;
+  goTo('s-jc-ok');
+}
+
+// ═══════════════════════════════════════
+// SUPERVISOR
+// ═══════════════════════════════════════
+async function supCargar() {
+  const nom = document.getElementById('sup-nombre').value.trim();
+  const ciclo = document.getElementById('sup-ciclo').value;
+  if (!nom) { alert('Ingresa tu nombre'); return; }
+  if (!ciclo) { alert('Selecciona el ciclo'); return; }
+  if (!supH) { alert('Selecciona el horario'); return; }
+  supCtx = { nom, ciclo, horario: supH };
+
+  document.getElementById('sup-ciclo-lbl').textContent = ciclo;
+  document.getElementById('sup-badge').textContent = ETQ[supH];
+  document.getElementById('sup-spinner').style.display = 'block';
+  document.getElementById('sup-body').style.display = 'none';
+  document.getElementById('sup-vacio').style.display = 'none';
+  goTo('s-sup');
+
+  let cuads = [];
+  const prefix = `cuad:${ciclo}:${supH}:`;
+
+  try {
+    const res = await window.storage.list(prefix, true);
+    if (res && res.keys && res.keys.length > 0) {
+      for (const k of res.keys) {
+        try { const r = await window.storage.get(k, true); if (r) cuads.push(JSON.parse(r.value)); } catch(e) {}
+      }
+    }
+  } catch(e) {}
+
+  // fallback localStorage
+  if (cuads.length === 0) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith(prefix)) { try { cuads.push(JSON.parse(localStorage.getItem(k))); } catch(e) {} }
+      }
+    } catch(e) {}
+  }
+
+  document.getElementById('sup-spinner').style.display = 'none';
+  if (cuads.length === 0) { document.getElementById('sup-vacio').style.display = 'block'; return; }
+  renderConsolidado(cuads, ciclo, supH, nom);
+}
+
+function renderConsolidado(cuads, ciclo, h, nom) {
+  cuads.sort((a, b) => parseInt(a.ncuad) - parseInt(b.ncuad));
+  const esKg = h !== '10:30';
+  const totC = cuads.length;
+  const totJ = cuads.reduce((s, c) => s + c.jornales, 0);
+  const totH = cuads.reduce((s, c) => s + c.has, 0).toFixed(2);
+  const totKg = esKg ? parseFloat(cuads.reduce((s, c) => s + (c.totalKg || 0), 0).toFixed(2)) : 0;
+
+  document.getElementById('s-cuad').textContent = totC;
+  document.getElementById('s-jorn').textContent = totJ;
+  document.getElementById('s-has').textContent = totH;
+  const kgBox = document.getElementById('s-kg-box');
+  if (esKg) { kgBox.style.display = 'block'; document.getElementById('s-kg').textContent = totKg.toLocaleString('es-PE'); }
+  else kgBox.style.display = 'none';
+
+  // lista cuadrillas
+  const lista = document.getElementById('sup-lista');
+  lista.innerHTML = '';
+  cuads.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'card';
+    let fhtml = '';
+    if (esKg && c.formatos) {
+      c.formatos.forEach(f => {
+        fhtml += `<div class="data-row"><span class="dl" style="font-size:11px;">${f.nom.substring(0,34)}…</span><span class="dv">${f.bandejas} bdj · ${f.kg} kg</span></div>`;
+      });
+      fhtml += `<div class="data-row"><span class="dl" style="font-weight:600;">Total kg</span><span class="dv" style="color:var(--accent);font-weight:700;">${c.totalKg} kg</span></div>`;
+    }
+    d.innerHTML = `
+      <div class="card-head">
+        <h3>Cuadrilla ${c.ncuad}</h3>
+        <span class="badge badge-green">${ETQ[c.horario] || c.horario}</span>
+      </div>
+      <div class="data-row"><span class="dl">JC</span><span class="dv">${c.jc}</span></div>
+      <div class="data-row"><span class="dl">Manejo</span><span class="dv">${c.manejo === 'CONV' ? 'Convencional' : c.manejo === 'ORG' ? 'Orgánico' : '—'}</span></div>
+      <div class="data-row"><span class="dl">Sector / Parcela</span><span class="dv">${c.sector} · P${c.parcela}</span></div>
+      <div class="data-row"><span class="dl">Hileras recorridas</span><span class="dv">${c.lineas} / ${c.hileras_total}</span></div>
+      <div class="data-row"><span class="dl">Has recorridas</span><span class="dv">${c.has} has</span></div>
+      <div class="data-row"><span class="dl">Jornales</span><span class="dv">${c.jornales}</span></div>
+      ${fhtml}`;
+    lista.appendChild(d);
+  });
+
+  // mensaje WhatsApp
+  const fecha = new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const sep = '─'.repeat(30);
+  let msg = `📋 SEGUIMIENTO COSECHA\nCiclo: ${ciclo}\nFecha: ${fecha}  |  Hora: ${ETQ[h]}\nSupervisor: ${nom}\n${sep}\n`;
+  cuads.forEach(c => {
+    msg += `Cuad.${c.ncuad} | ${c.sector} P${c.parcela} | ${c.manejo||'—'} | ${c.has} has | ${c.jornales} jorn.\n`;
+    if (esKg && c.formatos) {
+      c.formatos.forEach(f => { msg += `  · ${f.nom}: ${f.bandejas} bdj = ${f.kg} kg\n`; });
+      msg += `  Subtotal: ${c.totalKg} kg\n`;
+    }
+  });
+  msg += `${sep}\n✅ Cuadrillas: ${totC}  |  Jornales: ${totJ}\n🌿 Has recorridas: ${totH} has\n`;
+  if (esKg) msg += `📦 Kg totales: ${totKg.toLocaleString('es-PE')} kg\n`;
+  document.getElementById('sup-msg').textContent = msg;
+  supCtx.cuads = cuads;
+  document.getElementById('sup-body').style.display = 'block';
+}
+
+function copiar() {
+  navigator.clipboard.writeText(document.getElementById('sup-msg').textContent).then(() => {
+    const ok = document.getElementById('copiado');
+    ok.style.display = 'block';
+    setTimeout(() => ok.style.display = 'none', 2500);
+  });
+}
+
+async function limpiar() {
+  if (_rolActual !== 'supervisor') { alert('Solo el supervisor puede limpiar datos.'); return; }
+  const ciclo = supCtx.ciclo, horario = supCtx.horario;
+  if (!confirm(`¿Eliminar todos los reportes del ciclo ${ciclo} — ${ETQ[horario]}?\nEsta acción no afecta otros ciclos.`)) return;
+  try {
+    const { collection, getDocs, query, where, deleteDoc, doc } = window._fb;
+    const q = query(collection(window._db, 'reportes'), where('ciclo','==',ciclo), where('horario','==',horario));
+    const snap = await getDocs(q);
+    await Promise.all(snap.docs.map(d => deleteDoc(doc(window._db, 'reportes', d.id))));
+  } catch(e) { console.error('Error Firestore:', e); }
+  try {
+    const prefix = `rpt__${ciclo}__${horario}__`;
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(prefix)) keys.push(k); }
+    keys.forEach(k => localStorage.removeItem(k));
+  } catch(e) {}
+  document.getElementById('sup-body').style.display = 'none';
+  document.getElementById('sup-vacio').style.display = 'block';
+}
+
+
+  // ═══════════════════════════════════════
+  // PWA: SERVICE WORKER + INSTALL PROMPT
+  // ═══════════════════════════════════════
+  let deferredPrompt = null;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registrado:', reg.scope))
+        .catch(err => console.log('SW error:', err));
+    });
+  }
+
+  // Capturar evento de instalación nativa
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Mostrar banner solo si no lo descartó antes
+    if (!localStorage.getItem('pwa-dismissed')) {
+      const banner = document.getElementById('pwa-banner');
+      if (banner) banner.style.display = 'flex';
+    }
+  });
+
+  // Botón instalar
+  const installBtn = document.getElementById('pwa-install-btn');
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById('pwa-banner').style.display = 'none';
+      if (outcome === 'accepted') console.log('App instalada');
+    });
+  }
+
+  // Botón descartar
+  const dismissBtn = document.getElementById('pwa-dismiss-btn');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      document.getElementById('pwa-banner').style.display = 'none';
+      localStorage.setItem('pwa-dismissed', '1');
+    });
+  }
+
+  // Detectar si ya está instalada
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('pwa-banner').style.display = 'none';
+    deferredPrompt = null;
+  });
+
+  // Indicador offline/online
+  function updateOnlineStatus() {
+    const statusBar = document.getElementById('status-bar');
+    if (!statusBar) return;
+    if (!navigator.onLine) {
+      statusBar.className = 'status warn';
+      statusBar.textContent = '⚠ Sin conexión — los datos se guardarán localmente';
+    }
+  }
+  window.addEventListener('offline', updateOnlineStatus);
+  window.addEventListener('online', () => {
+    const statusBar = document.getElementById('status-bar');
+    if (statusBar) {
+      statusBar.className = 'status ok';
+      statusBar.textContent = '✓ Conexión restaurada — sincronizando...';
+      setTimeout(() => checkStorage(), 1000);
+    }
+  });
+
+// Wait for Firebase SDK to load before init
+if (window._auth) {
+  init();
+} else {
+  window.addEventListener('firebase-ready', init);
+}
+</script>
+</body>
+</html>
